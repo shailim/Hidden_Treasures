@@ -133,8 +133,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         Log.i(TAG, "showing map");
         //request permission
         getLocationPermission(); // is there a way to do this synchronously instead of async
-        updateLocationUI();
-        getDeviceLocation();
     }
 
     // checking if location permission is granted
@@ -160,9 +158,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             //when the button is enabled, the camera position moves to the user's location and centers it on the map
             map.getUiSettings().setMyLocationButtonEnabled(true);
         } else {
-//            map.setMyLocationEnabled(false);
-//            map.getUiSettings().setMyLocationButtonEnabled(false);
-//            lastKnownLocation = null;
+            map.setMyLocationEnabled(false);
+            map.getUiSettings().setMyLocationButtonEnabled(false);
+            lastKnownLocation = null;
             //request for permission
             getLocationPermission();
         }
@@ -174,7 +172,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             Log.i(TAG, "getting device location");
             map.setMyLocationEnabled(true);
             map.getUiSettings().setMyLocationButtonEnabled(true);
-            Task<Location> locationResult = fusedLocationProviderClient.getLastLocation();
+            //using lastLocation() returns null the first time its called so use currentLocation()
+            Task<Location> locationResult = fusedLocationProviderClient.getCurrentLocation(100, null); //param1: priority_high_accuracy
             locationResult.addOnCompleteListener(new OnCompleteListener<Location>() {
                 @Override
                 public void onComplete(@NonNull Task<Location> task) {
