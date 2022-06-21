@@ -1,6 +1,9 @@
 package com.example.hidden_treasures;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
 
 import androidx.activity.result.ActivityResultCallback;
@@ -17,9 +20,13 @@ import android.view.ViewGroup;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -33,6 +40,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap map;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
+    private Location lastKnownLocation;
+    private static final float ZOOM_LEVEL = 15;
 
     private boolean locationPermissionGranted = false;
     private final ActivityResultLauncher<String> permissionLauncher = registerForActivityResult(
@@ -42,7 +51,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 public void onActivityResult(Boolean result) {
                     if (result) {
                         Log.i(TAG, "permission granted");
+                        //repetitive, same three lines as in getLocationPermission() but I think I have to call these functions in the callback
+                        // otherwise they could get called when the permission isn't granted yet
                         locationPermissionGranted = true;
+                        updateLocationUI();
+                        getDeviceLocation();
                     } else {
                         Log.i(TAG, "permission denied");
                     }
@@ -105,8 +118,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         SupportMapFragment childMapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.google_map);
 
-        getLocationPermission();
-
         // getting map
         if (childMapFragment != null) {
             childMapFragment.getMapAsync(this);
@@ -116,21 +127,74 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         return view;
     }
 
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        this.map = googleMap;
+        Log.i(TAG, "showing map");
+        //request permission
+        getLocationPermission(); // is there a way to do this synchronously instead of async
+        updateLocationUI();
+        getDeviceLocation();
+    }
+
     // checking if location permission is granted
     public void getLocationPermission() {
         if (ContextCompat.checkSelfPermission(getContext(),
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             locationPermissionGranted = true;
+            updateLocationUI();
+            getDeviceLocation();
         } else {
             permissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
         }
     }
 
-    @Override
-    public void onMapReady(@NonNull GoogleMap googleMap) {
-        this.map = map;
-        Log.i(TAG, "showing map");
+    //adding this for now because it says I'm missing permission even though I added it and the permission request also works
+    @SuppressLint("MissingPermission")
+    // this function enables the location layer which shows the user's location on map
+    public void updateLocationUI() {
+        if (locationPermissionGranted) {
+            //enabling the location layer
+            map.setMyLocationEnabled(true);
+            //when the button is enabled, the camera position moves to the user's location and centers it on the map
+            map.getUiSettings().setMyLocationButtonEnabled(true);
+        } else {
+//            map.setMyLocationEnabled(false);
+//            map.getUiSettings().setMyLocationButtonEnabled(false);
+//            lastKnownLocation = null;
+            //request for permission
+            getLocationPermission();
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    public void getDeviceLocation() {
+        if (locationPermissionGranted) {
+            Log.i(TAG, "getting device location");
+            map.setMyLocationEnabled(true);
+            map.getUiSettings().setMyLocationButtonEnabled(true);
+            Task<Location> locationResult = fusedLocationProviderClient.getLastLocation();
+            locationResult.addOnCompleteListener(new OnCompleteListener<Location>() {
+                @Override
+                public void onComplete(@NonNull Task<Location> task) {
+                    if (task.isSuccessful()) {
+                        lastKnownLocation = task.getResult();
+                        if (lastKnownLocation != null) {
+                            // move the camera to the current location
+                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                                    new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()), ZOOM_LEVEL));
+                            Log.i(TAG, "showing current location");
+                        } else {
+                            Log.i(TAG, "lastLocation is null");
+                        }
+                    } else {
+                        Log.i(TAG, "Current location is null");
+                    }
+
+                }
+            });
+        }
     }
 
 }
