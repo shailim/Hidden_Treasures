@@ -1,9 +1,13 @@
 package com.example.hidden_treasures;
 
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import android.util.Log;
@@ -11,6 +15,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -20,9 +26,28 @@ import com.google.android.gms.maps.SupportMapFragment;
  * Use the {@link MapFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class MapFragment extends Fragment {
+public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public static final String TAG = "MapFragment";
+
+    private GoogleMap map;
+
+    private FusedLocationProviderClient fusedLocationProviderClient;
+
+    private boolean locationPermissionGranted = false;
+    private final ActivityResultLauncher<String> permissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            new ActivityResultCallback<Boolean>() {
+                @Override
+                public void onActivityResult(Boolean result) {
+                    if (result) {
+                        Log.i(TAG, "permission granted");
+                        locationPermissionGranted = true;
+                    } else {
+                        Log.i(TAG, "permission denied");
+                    }
+                }
+            });
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -72,19 +97,40 @@ public class MapFragment extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_map, container, false);
 
+        // to get the device's location
+        // constructing the client
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getContext());
+
         // statically adding the map fragment, a child fragment of this class
         SupportMapFragment childMapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.google_map);
 
+        getLocationPermission();
+
         // getting map
-        childMapFragment.getMapAsync(new OnMapReadyCallback() {
-            @Override
-            public void onMapReady(@NonNull GoogleMap googleMap) {
-                Log.i(TAG, "showing map");
-            }
-        });
+        if (childMapFragment != null) {
+            childMapFragment.getMapAsync(this);
+        }
 
         // return the layout view
         return view;
     }
+
+    // checking if location permission is granted
+    public void getLocationPermission() {
+        if (ContextCompat.checkSelfPermission(getContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            locationPermissionGranted = true;
+        } else {
+            permissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+    }
+
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        this.map = map;
+        Log.i(TAG, "showing map");
+    }
+
 }

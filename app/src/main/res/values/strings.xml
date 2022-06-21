@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Hidden_Treasures</string>
+    <string name="maps_api_key">AIzaSyCoYeCfrx40Jt45M2vdhrYmq1ugixHkgGQ</string>
     <string name="menu_title_map">Map</string>
     <string name="menu_title_create">Create</string>
     <string name="menu_title_profile">Profile</string>
