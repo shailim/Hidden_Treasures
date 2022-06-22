@@ -94,6 +94,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         return view;
     }
 
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+    }
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
@@ -107,6 +111,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         getLocationPermission();
         // enables any markers on the map to be clickable
         enableMarkerClicks();
+        // keep track of camera position on map
+        trackCameraPosition();
     }
 
     /* Checks if location permission is granted, requests permission if not */
@@ -192,4 +198,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
         });
     }
+
+
+    /* Adds a listener to track camera movement on map */
+    public void trackCameraPosition() {
+        map.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
+            @Override
+            public void onCameraMove() {
+                Log.i(TAG, "Latitude: " + map.getCameraPosition().target.latitude +
+                        "\nLongitude: " + map.getCameraPosition().target.longitude);
+            }
+        });
+    }
+
 }
