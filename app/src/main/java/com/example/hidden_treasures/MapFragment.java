@@ -1,6 +1,5 @@
 package com.example.hidden_treasures;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -17,6 +16,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -25,14 +25,11 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link MapFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public static final String TAG = "MapFragment";
@@ -51,57 +48,27 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 public void onActivityResult(Boolean result) {
                     if (result) {
                         Log.i(TAG, "permission granted");
-                        //repetitive, same three lines as in getLocationPermission() but I think I have to call these functions in the callback
-                        // otherwise they could get called when the permission isn't granted yet
                         locationPermissionGranted = true;
-                        updateLocationUI();
-                        getDeviceLocation();
+                        enableLocationLayer();
+                        findAndSetCurrentLocation();
                     } else {
                         Log.i(TAG, "permission denied");
                     }
                 }
             });
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    //will change later when I add params
-    private String mParam1;
-    private String mParam2;
-
     public MapFragment() {
         // Required empty public constructor
     }
 
-    /*
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment MapFragment.
-     */
-    // TODO: Rename and change types and number of parameters
     public static MapFragment newInstance() {
         MapFragment fragment = new MapFragment();
-        //no parameters right now but can add later
-//        Bundle args = new Bundle();
-//        args.putString(ARG_PARAM1, param1);
-//        args.putString(ARG_PARAM2, param2);
-//        fragment.setArguments(args);
         return fragment;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
@@ -127,31 +94,38 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         return view;
     }
 
+
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
-        this.map = googleMap;
         Log.i(TAG, "showing map");
-        //request permission
-        getLocationPermission(); // is there a way to do this synchronously instead of async
+        this.map = googleMap;
+        //setting initial position to last known location
+        if (lastKnownLocation != null) {
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()), ZOOM_LEVEL));
+        }
+        //request permission to get location
+        getLocationPermission();
+        // enables any markers on the map to be clickable
+        enableMarkerClicks();
     }
 
-    // checking if location permission is granted
+    /* Checks if location permission is granted, requests permission if not */
     public void getLocationPermission() {
         if (ContextCompat.checkSelfPermission(getContext(),
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             locationPermissionGranted = true;
-            updateLocationUI();
-            getDeviceLocation();
+            enableLocationLayer();
+            findAndSetCurrentLocation();
         } else {
             permissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
         }
     }
 
-    //adding this for now because it says I'm missing permission even though I added it and the permission request also works
+
+    /* Enables the location layer on the map, needed to show user's location */
     @SuppressLint("MissingPermission")
-    // this function enables the location layer which shows the user's location on map
-    public void updateLocationUI() {
+    public void enableLocationLayer() {
         if (locationPermissionGranted) {
             //enabling the location layer
             map.setMyLocationEnabled(true);
@@ -166,34 +140,56 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
+    /* Finds the user's device location and sets the map to that location */
     @SuppressLint("MissingPermission")
-    public void getDeviceLocation() {
+    public void findAndSetCurrentLocation() {
+        // first check if location permission is granted
         if (locationPermissionGranted) {
             Log.i(TAG, "getting device location");
-            map.setMyLocationEnabled(true);
-            map.getUiSettings().setMyLocationButtonEnabled(true);
-            //using lastLocation() returns null the first time its called so use currentLocation()
+            // get current location of device
             Task<Location> locationResult = fusedLocationProviderClient.getCurrentLocation(100, null); //param1: priority_high_accuracy
+            // listen for when the task is completed
             locationResult.addOnCompleteListener(new OnCompleteListener<Location>() {
                 @Override
                 public void onComplete(@NonNull Task<Location> task) {
                     if (task.isSuccessful()) {
                         lastKnownLocation = task.getResult();
-                        if (lastKnownLocation != null) {
-                            // move the camera to the current location
-                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                                    new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()), ZOOM_LEVEL));
-                            Log.i(TAG, "showing current location");
-                        } else {
-                            Log.i(TAG, "lastLocation is null");
-                        }
-                    } else {
-                        Log.i(TAG, "Current location is null");
+                        Log.i(TAG, "found location");
+                        // place a marker at user's location
+                        placeMarker(lastKnownLocation);
+                        // moves the map's camera position to the user's location
+                        map.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                                new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()), ZOOM_LEVEL));
                     }
-
                 }
             });
+        } else {
+            Log.i(TAG, "permission is not granted to find location");
         }
     }
 
+    /* Places a marker at the user's current location
+     * Takes in a location value */
+    public void placeMarker(Location location) {
+        // get the location coordinates and create a LatLng object
+        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        // add the new marker at the location
+        map.addMarker(new MarkerOptions()
+                .position(latLng)
+                .title("Current Location"));
+    }
+
+
+    /* Adds a click listener on markers
+     * Will update functionality of click later  */
+    public void enableMarkerClicks() {
+        map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(@NonNull Marker marker) {
+                // shows a toast with the marker title
+                Toast.makeText(getContext(), marker.getTitle(), Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        });
+    }
 }

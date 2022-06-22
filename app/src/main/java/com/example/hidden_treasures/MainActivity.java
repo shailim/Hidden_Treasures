@@ -17,8 +17,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // find the bottom navigation view
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
 
+        // initialize the fragment manager
         final FragmentManager fragmentManager = getSupportFragmentManager();
 
         // handling navigation selection
@@ -38,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
                                 fragment = MapFragment.newInstance();
                                 break;
                         }
+                        // set the selected fragment to the fragment container
                         fragmentManager.beginTransaction().replace(R.id.clContainer, fragment).commit();
                         return true;
                     }
