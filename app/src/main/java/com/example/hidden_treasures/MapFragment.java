@@ -29,6 +29,10 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.parse.ParseException;
+import com.parse.ParseGeoPoint;
+import com.parse.ParseObject;
+import com.parse.SaveCallback;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
@@ -207,6 +211,27 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             public void onCameraMove() {
                 Log.i(TAG, "Latitude: " + map.getCameraPosition().target.latitude +
                         "\nLongitude: " + map.getCameraPosition().target.longitude);
+            }
+        });
+    }
+
+    /* Saves markers to database
+     * For testing purposes, it takes in a marker value for now */
+    private void saveMarker(Marker marker) {
+        // initialize a new ParseMarker object
+        ParseMarker pmarker = new ParseMarker();
+        // set the required values
+        pmarker.setTitle("My Location");
+        LatLng coordinates = marker.getPosition();
+        ParseGeoPoint location = new ParseGeoPoint(coordinates.latitude, coordinates.longitude);
+        pmarker.setLocation(location);
+        // async save to database
+        pmarker.saveInBackground(new SaveCallback() {
+            @Override
+            public void done(ParseException e) {
+                if (e == null) {
+                    Log.i(TAG, "saved marker");
+                }
             }
         });
     }

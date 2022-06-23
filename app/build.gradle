@@ -38,4 +38,5 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
     implementation 'com.google.android.gms:play-services-maps:18.0.2'
     implementation 'com.google.android.libraries.places:places:2.6.0'
+    implementation "com.github.parse-community.Parse-SDK-Android:parse:4.0.0"
 }

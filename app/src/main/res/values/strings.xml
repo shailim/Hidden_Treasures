@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">Hidden_Treasures</string>
     <string name="maps_api_key">AIzaSyCoYeCfrx40Jt45M2vdhrYmq1ugixHkgGQ</string>
+    <string name="back4app_server_url">https://parseapi.back4app.com/</string>
+    <string name="back4app_app_id">wFsQLTPwLf5cRwl79llJUzL4s80NBGnJt0uAuiL7</string>
+    <string name="back4app_client_key">2tX0tnGLA3IHf9ElGpDOKuuQ3RBAQ3zlXWkrkPNx</string>
     <string name="menu_title_map">Map</string>
     <string name="menu_title_create">Create</string>
     <string name="menu_title_profile">Profile</string>
