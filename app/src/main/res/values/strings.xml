@@ -10,4 +10,6 @@
     <string name="submit_marker">Mark It</string>
     <string name="title_hint">Enter a title…</string>
     <string name="description_hint">Optional description…</string>
+    <string name="take_picture">Take a Photo</string>
+    <string name="take_video">Record a Video</string>
 </resources>
