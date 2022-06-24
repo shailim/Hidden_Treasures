@@ -7,4 +7,7 @@
     <string name="menu_title_map">Map</string>
     <string name="menu_title_create">Create</string>
     <string name="menu_title_profile">Profile</string>
+    <string name="submit_marker">Mark It</string>
+    <string name="title_hint">Enter a title…</string>
+    <string name="description_hint">Optional description…</string>
 </resources>
