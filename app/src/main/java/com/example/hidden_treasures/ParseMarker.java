@@ -7,7 +7,7 @@ import com.parse.ParseObject;
 
 @ParseClassName("ParseMarker")
 public class ParseMarker extends ParseObject {
-    public static final String IMAGE = "image";
+    public static final String MEDIA = "media";
     public static final String TITLE = "title";
     public static final String DESCRIPTION = "description";
     public static final String LOCATION = "location";
@@ -15,8 +15,15 @@ public class ParseMarker extends ParseObject {
 
     public ParseMarker() {}
 
-    public ParseFile getImage() {
-        return getParseFile(IMAGE);
+    public ParseMarker(String title, String description, ParseFile media, ParseGeoPoint location) {
+        put(TITLE, title);
+        put(DESCRIPTION, description);
+        put(MEDIA, media);
+        put(LOCATION, location);
+    }
+
+    public ParseFile getMedia() {
+        return getParseFile(MEDIA);
     }
 
     public String getTitle() {
@@ -35,8 +42,8 @@ public class ParseMarker extends ParseObject {
         return (int) getNumber(VIEW_COUNT);
     }
 
-    public void setImage(ParseFile image) {
-        put(IMAGE, image);
+    public void setMedia(ParseFile media) {
+        put(MEDIA, media);
     }
 
     public void setTitle(String title) {

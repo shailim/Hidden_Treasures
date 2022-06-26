@@ -1,9 +1,13 @@
 package com.example.hidden_treasures;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -21,19 +25,36 @@ import android.widget.VideoView;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContract;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityOptionsCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.parse.ParseException;
+import com.parse.ParseFile;
+import com.parse.ParseGeoPoint;
+import com.parse.SaveCallback;
+
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 
 public class CreateFragment extends Fragment {
 
     private static final String TAG = "CreateFragment";
 
     private File photoFile;
+    private File videoFile;
     private EditText etTitle;
     private EditText etDescription;
     private Button btnSubmitMarker;
@@ -41,6 +62,25 @@ public class CreateFragment extends Fragment {
     private VideoView vvPreview;
     private Button btnTakePicture;
     private Button btnTakeVideo;
+
+    private Location currentLocation;
+    private FusedLocationProviderClient fusedLocationProviderClient;
+
+    private boolean locationPermissionGranted = false;
+    private final ActivityResultLauncher<String> permissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            new ActivityResultCallback<Boolean>() {
+                @Override
+                public void onActivityResult(Boolean result) {
+                    if (result) {
+                        Log.i(TAG, "permission granted");
+                        locationPermissionGranted = true;
+                        getUserLocation();
+                    } else {
+                        Log.i(TAG, "permission denied");
+                    }
+                }
+            });
 
     private ActivityResultLauncher<Uri> cameraLauncher = registerForActivityResult(
             new ActivityResultContracts.TakePicture(),
@@ -102,9 +142,13 @@ public class CreateFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // get location permission and user's current location
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getContext());
+        getLocationPermission();
+
         // get references to all the views in layout
-        ivPreview = (ImageView) view.findViewById(R.id.ivPreview);
-        vvPreview = (VideoView) view.findViewById(R.id.vvPreview);
+        ivPreview = view.findViewById(R.id.ivPreview);
+        vvPreview = view.findViewById(R.id.vvPreview);
         etTitle = view.findViewById(R.id.etTitle);
         etDescription = view.findViewById(R.id.etDescription);
         btnSubmitMarker = view.findViewById(R.id.btnSubmitMarker);
@@ -115,9 +159,45 @@ public class CreateFragment extends Fragment {
         setButtonListeners();
     }
 
+    /* Checks if location permission is granted, requests permission if not */
+    public void getLocationPermission() {
+        if (ContextCompat.checkSelfPermission(getContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            locationPermissionGranted = true;
+            getUserLocation();
+        } else {
+            permissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+    }
+
+    /* Finds the user's device location */
+    @SuppressLint("MissingPermission")
+    public void getUserLocation() {
+        // first check if location permission is granted
+        if (locationPermissionGranted) {
+            Log.i(TAG, "getting device location");
+            // get current location of device
+            Task<Location> locationResult = fusedLocationProviderClient.getCurrentLocation(100, null); //param1: priority_high_accuracy
+            // listen for when the task is completed
+            locationResult.addOnCompleteListener(new OnCompleteListener<Location>() {
+                @Override
+                public void onComplete(@NonNull Task<Location> task) {
+                    if (task.isSuccessful()) {
+                        currentLocation = task.getResult();
+                        Log.i(TAG, "found location");
+                    }
+                }
+            });
+        } else {
+            Log.i(TAG, "permission is not granted to find location");
+        }
+    }
+
 
     /* Sets the onClickListeners for any buttons */
     private void setButtonListeners() {
+        /* Take Picture */
         btnTakePicture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -135,6 +215,7 @@ public class CreateFragment extends Fragment {
             }
         });
 
+        /* Take Video */
         btnTakeVideo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -144,12 +225,50 @@ public class CreateFragment extends Fragment {
                 // create intent to open video camera
                 Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
 
+                // getting a file reference
+                videoFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_video_" + System.currentTimeMillis() + ".mp4");
+
+                // wrapping File object into a content provider
+                Uri fileProvider = FileProvider.getUriForFile(getContext(), "com.example.hidden_treasures.fileprovider", videoFile);
+
+                intent.setDataAndType(fileProvider, "video/mp4");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
                 // only launch intent if it can be handled
                 if (getContext().getPackageManager().resolveActivity(intent, 0) != null) {
                     videoLauncher.launch(intent);
                 } else {
                     Toast.makeText(getContext(), "No apps supports this action", Toast.LENGTH_SHORT).show();
                 }
+            }
+        });
+
+        /* Submit Marker */
+        btnSubmitMarker.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                // get the values for marker
+                String title = etTitle.getText().toString();
+                String description = etTitle.getText().toString();
+                ParseFile file = new ParseFile(photoFile);
+                ParseGeoPoint parseGeoPoint = new ParseGeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
+
+                // create a new ParseMarker object
+                ParseMarker parseMarker = new ParseMarker(title, description, file, parseGeoPoint);
+
+                // call the async query to save marker
+                parseMarker.saveInBackground(new SaveCallback() {
+                    @Override
+                    public void done(ParseException e) {
+                        if (e == null) {
+                            Log.i(TAG, "marker created!");
+                            Toast.makeText(getContext(), "marker created", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Log.e(TAG, e.getMessage());
+                        }
+                    }
+                });
             }
         });
     }

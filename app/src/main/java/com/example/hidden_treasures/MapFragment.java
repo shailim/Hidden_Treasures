@@ -1,6 +1,7 @@
 package com.example.hidden_treasures;
 
 import android.annotation.SuppressLint;
+import android.app.DownloadManager;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
@@ -29,37 +30,24 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.parse.FindCallback;
 import com.parse.ParseException;
+import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
+import com.parse.ParseQuery;
 import com.parse.SaveCallback;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public static final String TAG = "MapFragment";
 
+    private List<ParseMarker> markers = new ArrayList<>();
+
     private GoogleMap map;
-
-    private FusedLocationProviderClient fusedLocationProviderClient;
-    private Location lastKnownLocation;
-    private static final float ZOOM_LEVEL = 15;
-
-    private boolean locationPermissionGranted = false;
-    private final ActivityResultLauncher<String> permissionLauncher = registerForActivityResult(
-            new ActivityResultContracts.RequestPermission(),
-            new ActivityResultCallback<Boolean>() {
-                @Override
-                public void onActivityResult(Boolean result) {
-                    if (result) {
-                        Log.i(TAG, "permission granted");
-                        locationPermissionGranted = true;
-                        enableLocationLayer();
-                        findAndSetCurrentLocation();
-                    } else {
-                        Log.i(TAG, "permission denied");
-                    }
-                }
-            });
 
     public MapFragment() {
         // Required empty public constructor
@@ -80,10 +68,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_map, container, false);
-
-        // to get the device's location
-        // constructing the client
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getContext());
 
         // statically adding the map fragment, a child fragment of this class
         SupportMapFragment childMapFragment = (SupportMapFragment) getChildFragmentManager()
@@ -107,88 +91,55 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onMapReady(@NonNull GoogleMap googleMap) {
         Log.i(TAG, "showing map");
         this.map = googleMap;
-        //setting initial position to last known location
-        if (lastKnownLocation != null) {
-            map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()), ZOOM_LEVEL));
-        }
-        //request permission to get location
-        getLocationPermission();
+        //setting initial position to show the whole world
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(40.52, 34.3), 0));
+        //get markers from database and place on map
+        getMarkers();
         // enables any markers on the map to be clickable
         enableMarkerClicks();
         // keep track of camera position on map
         trackCameraPosition();
     }
 
-    /* Checks if location permission is granted, requests permission if not */
-    public void getLocationPermission() {
-        if (ContextCompat.checkSelfPermission(getContext(),
-                android.Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            locationPermissionGranted = true;
-            enableLocationLayer();
-            findAndSetCurrentLocation();
-        } else {
-            permissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION);
-        }
-    }
-
-
-    /* Enables the location layer on the map, needed to show user's location */
-    @SuppressLint("MissingPermission")
-    public void enableLocationLayer() {
-        if (locationPermissionGranted) {
-            //enabling the location layer
-            map.setMyLocationEnabled(true);
-            //when the button is enabled, the camera position moves to the user's location and centers it on the map
-            map.getUiSettings().setMyLocationButtonEnabled(true);
-        } else {
-            map.setMyLocationEnabled(false);
-            map.getUiSettings().setMyLocationButtonEnabled(false);
-            lastKnownLocation = null;
-            //request for permission
-            getLocationPermission();
-        }
-    }
-
-    /* Finds the user's device location and sets the map to that location */
-    @SuppressLint("MissingPermission")
-    public void findAndSetCurrentLocation() {
-        // first check if location permission is granted
-        if (locationPermissionGranted) {
-            Log.i(TAG, "getting device location");
-            // get current location of device
-            Task<Location> locationResult = fusedLocationProviderClient.getCurrentLocation(100, null); //param1: priority_high_accuracy
-            // listen for when the task is completed
-            locationResult.addOnCompleteListener(new OnCompleteListener<Location>() {
-                @Override
-                public void onComplete(@NonNull Task<Location> task) {
-                    if (task.isSuccessful()) {
-                        lastKnownLocation = task.getResult();
-                        Log.i(TAG, "found location");
-                        // place a marker at user's location
-                        placeMarker(lastKnownLocation);
-                        // moves the map's camera position to the user's location
-                        map.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                                new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()), ZOOM_LEVEL));
-                    }
+    /* retrieves markers from database, then calls a function to place markers on map */
+    private void getMarkers() {
+        ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
+        markerQuery.addDescendingOrder("view_count");
+        markerQuery.findInBackground(new FindCallback<ParseMarker>() {
+            @Override
+            public void done(List<ParseMarker> objects, ParseException e) {
+                if (e == null) {
+                    markers.addAll(objects);
+                    Log.i(TAG, "got the markers");
+                    // call function to place markers on map
+                    placeMarkersOnMap();
+                } else {
+                    Log.i(TAG, "Couldn't get markers");
                 }
-            });
-        } else {
-            Log.i(TAG, "permission is not granted to find location");
+            }
+        });
+    }
+
+    /* Creates new markers and places them on the map */
+    private void placeMarkersOnMap() {
+        if (markers != null && markers.size() > 0) {
+            for (ParseMarker marker : markers) {
+                // get the marker values
+                LatLng userLocation = new LatLng(marker.getLocation().getLatitude(), marker.getLocation().getLongitude());
+                String title = marker.getTitle();
+                String description = marker.getDescription();
+                ParseFile media = marker.getMedia();
+                //create a new marker object with the values
+                Marker createdMarker = map.addMarker(new MarkerOptions()
+                        .position(userLocation)
+                        .title(title));
+                // set the tag as the image url
+                createdMarker.setTag(media.getUrl());
+                createdMarker.setSnippet(description);
+            }
+            Log.i(TAG, "placed markers on map");
         }
     }
-
-    /* Places a marker at the user's current location
-     * Takes in a location value */
-    public void placeMarker(Location location) {
-        // get the location coordinates and create a LatLng object
-        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        // add the new marker at the location
-        map.addMarker(new MarkerOptions()
-                .position(latLng)
-                .title("Current Location"));
-    }
-
 
     /* Adds a click listener on markers
      * Will update functionality of click later  */
@@ -209,29 +160,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         map.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
             @Override
             public void onCameraMove() {
-                Log.i(TAG, "Latitude: " + map.getCameraPosition().target.latitude +
-                        "\nLongitude: " + map.getCameraPosition().target.longitude);
-            }
-        });
-    }
-
-    /* Saves markers to database
-     * For testing purposes, it takes in a marker value for now */
-    private void saveMarker(Marker marker) {
-        // initialize a new ParseMarker object
-        ParseMarker pmarker = new ParseMarker();
-        // set the required values
-        pmarker.setTitle("My Location");
-        LatLng coordinates = marker.getPosition();
-        ParseGeoPoint location = new ParseGeoPoint(coordinates.latitude, coordinates.longitude);
-        pmarker.setLocation(location);
-        // async save to database
-        pmarker.saveInBackground(new SaveCallback() {
-            @Override
-            public void done(ParseException e) {
-                if (e == null) {
-                    Log.i(TAG, "saved marker");
-                }
             }
         });
     }
