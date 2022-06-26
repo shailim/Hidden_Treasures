@@ -3,6 +3,8 @@ package com.example.hidden_treasures;
 import android.annotation.SuppressLint;
 import android.app.DownloadManager;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 
@@ -10,6 +12,7 @@ import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.UiThread;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
@@ -17,6 +20,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -40,6 +44,7 @@ import com.parse.SaveCallback;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
@@ -48,6 +53,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private List<ParseMarker> markers = new ArrayList<>();
 
     private GoogleMap map;
+    private SearchView searchLocation;
 
     public MapFragment() {
         // Required empty public constructor
@@ -77,6 +83,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if (childMapFragment != null) {
             childMapFragment.getMapAsync(this);
         }
+
+        // find the search view and set a listener on it
+        searchLocation = view.findViewById(R.id.searchLocation);
+        setSearchListener();
 
         // return the layout view
         return view;
@@ -160,6 +170,49 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         map.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
             @Override
             public void onCameraMove() {
+            }
+        });
+    }
+
+    /* Adds a query listener on the search view */
+    public void setSearchListener() {
+        // set the listener
+        searchLocation.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                Log.i(TAG, query);
+
+                // create a Geocoder object to get coordinates of place that user searched for
+                Geocoder geocoder = new Geocoder(getContext(), new Locale("en"));
+                geocoder.getFromLocationName(query, 1, new Geocoder.GeocodeListener() {
+
+                    @Override
+                    public void onGeocode(@NonNull List<Address> list) {
+                        // if there was a place returned for the search
+                        if (!list.isEmpty()) {
+                            // get the coordinates of the location
+                            Double latitude = list.get(0).getLatitude();
+                            Double longitude = list.get(0).getLongitude();
+
+                            // move map camera position to the location
+                            // right now, it's on a different thread so have to do it on the UI thread
+                            if (getActivity() != null) {
+                                getActivity().runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), 15));
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
             }
         });
     }

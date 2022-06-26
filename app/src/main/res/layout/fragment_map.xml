@@ -5,6 +5,15 @@
     android:layout_height="match_parent"
     tools:context=".MapFragment">
 
+    <SearchView
+        android:id="@+id/searchLocation"
+        android:layout_width="300dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="50dp"
+        android:elevation="5dp"
+        android:background="@color/white"/>
+
     <fragment
         android:name="com.google.android.gms.maps.SupportMapFragment"
         xmlns:map="http://schemas.android.com/apk/res-auto"
