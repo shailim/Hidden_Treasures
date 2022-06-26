@@ -1,5 +1,7 @@
 package com.example.hidden_treasures;
 
+import static com.parse.Parse.getApplicationContext;
+
 import android.annotation.SuppressLint;
 import android.app.DownloadManager;
 import android.content.pm.PackageManager;
@@ -20,9 +22,10 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.SearchView;
+import androidx.appcompat.widget.SearchView;
 import android.widget.Toast;
 
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -34,6 +37,11 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.net.PlacesClient;
+import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
+import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.parse.FindCallback;
 import com.parse.ParseException;
 import com.parse.ParseFile;
@@ -43,6 +51,7 @@ import com.parse.ParseQuery;
 import com.parse.SaveCallback;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -84,9 +93,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             childMapFragment.getMapAsync(this);
         }
 
-        // find the search view and set a listener on it
-        searchLocation = view.findViewById(R.id.searchLocation);
-        setSearchListener();
+        // enable autocomplete search for locations
+        setupAutocompleteSearch();
 
         // return the layout view
         return view;
@@ -174,17 +182,27 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
-    /* Adds a query listener on the search view */
-    public void setSearchListener() {
-        // set the listener
-        searchLocation.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                Log.i(TAG, query);
+    /* Uses Google's Places API to display place name for autocomplete searching */
+    public void setupAutocompleteSearch() {
+        // Initialize the Places SDK
+        Places.initialize(getApplicationContext(), getString(R.string.maps_api_key));
+        // Create a new PlacesClient instance
+        PlacesClient placesClient = Places.createClient(getContext());
 
+        // Initialize the AutocompleteSupportFragment
+        AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
+                getChildFragmentManager().findFragmentById(R.id.autocomplete_fragment);
+
+        // Specify the types of place data to return.
+        autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.NAME));
+
+        // Set up a PlaceSelectionListener to handle the response.
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(@NonNull Place place) {
                 // create a Geocoder object to get coordinates of place that user searched for
                 Geocoder geocoder = new Geocoder(getContext(), new Locale("en"));
-                geocoder.getFromLocationName(query, 1, new Geocoder.GeocodeListener() {
+                geocoder.getFromLocationName(place.getName(), 1, new Geocoder.GeocodeListener() {
 
                     @Override
                     public void onGeocode(@NonNull List<Address> list) {
@@ -207,12 +225,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         }
                     }
                 });
-                return false;
             }
 
             @Override
-            public boolean onQueryTextChange(String newText) {
-                return false;
+            public void onError(@NonNull Status status) {
+                Log.i(TAG, "An error occurred: " + status);
             }
         });
     }
