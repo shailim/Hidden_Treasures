@@ -50,6 +50,7 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.SaveCallback;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -167,6 +168,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             public boolean onMarkerClick(@NonNull Marker marker) {
                 // shows a toast with the marker title
                 Toast.makeText(getContext(), marker.getTitle(), Toast.LENGTH_SHORT).show();
+                MarkerDetailFragment markerDetail= new MarkerDetailFragment();
+                getActivity().getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragmentContainer, markerDetail)
+                        .commit();
                 return false;
             }
         });
@@ -202,12 +207,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             public void onPlaceSelected(@NonNull Place place) {
                 // create a Geocoder object to get coordinates of place that user searched for
                 Geocoder geocoder = new Geocoder(getContext(), new Locale("en"));
-                geocoder.getFromLocationName(place.getName(), 1, new Geocoder.GeocodeListener() {
-
-                    @Override
-                    public void onGeocode(@NonNull List<Address> list) {
-                        // if there was a place returned for the search
-                        if (!list.isEmpty()) {
+                try {
+                    List<Address> list = geocoder.getFromLocationName(place.getName(), 1);
+                    if (!list.isEmpty()) {
                             // get the coordinates of the location
                             Double latitude = list.get(0).getLatitude();
                             Double longitude = list.get(0).getLongitude();
@@ -222,9 +224,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                                     }
                                 });
                             }
-                        }
                     }
-                });
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             @Override

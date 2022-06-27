@@ -12,4 +12,5 @@
     <string name="description_hint">Optional description…</string>
     <string name="take_picture">Take a Photo</string>
     <string name="take_video">Record a Video</string>
+    <string name="fileprovider_authority">"com.example.hidden_treasures.fileprovider"</string>
 </resources>

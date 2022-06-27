@@ -111,6 +111,8 @@ public class CreateFragment extends Fragment {
                 vvPreview.setVisibility(View.VISIBLE);
                 vvPreview.setVideoURI(contentURI);
                 vvPreview.start();
+            } else {
+                Log.i(TAG, "didn't get video");
             }
         }
     });
@@ -226,13 +228,16 @@ public class CreateFragment extends Fragment {
                 Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
 
                 // getting a file reference
-                videoFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_video_" + System.currentTimeMillis() + ".mp4");
+                //videoFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_video_" + System.currentTimeMillis() + ".mp4");
+                videoFile = new File(Environment.getExternalStorageDirectory(), "share_video_" + System.currentTimeMillis() + ".mp4");
 
                 // wrapping File object into a content provider
-                Uri fileProvider = FileProvider.getUriForFile(getContext(), "com.example.hidden_treasures.fileprovider", videoFile);
+                Uri fileProvider = FileProvider.getUriForFile(getActivity(), getString(R.string.fileprovider_authority), videoFile);
 
-                intent.setDataAndType(fileProvider, "video/mp4");
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, fileProvider);
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                //intent.setDataAndType(fileProvider, "video/mp4");
 
                 // only launch intent if it can be handled
                 if (getContext().getPackageManager().resolveActivity(intent, 0) != null) {
