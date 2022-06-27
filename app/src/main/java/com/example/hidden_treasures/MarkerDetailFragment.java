@@ -5,16 +5,24 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.bumptech.glide.Glide;
 
 import org.w3c.dom.Text;
 
 
 public class MarkerDetailFragment extends Fragment {
+
+    private static final String TAG = "MarkerDetailFragment";
 
     private static final String MEDIA_URL = "mediaUrl";
     private static final String PLACE_NAME = "placeName";
@@ -27,7 +35,6 @@ public class MarkerDetailFragment extends Fragment {
     public MarkerDetailFragment() {
         // Required empty public constructor
     }
-
 
 
     public static MarkerDetailFragment newInstance(String mediaUrl, String placeName, String placeDescription) {
@@ -60,5 +67,38 @@ public class MarkerDetailFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // don't show nav bar here
+        getActivity().findViewById(R.id.bottom_navigation).setVisibility(View.INVISIBLE);
+
+        // get references to views in marker detail layout
+        TextView tvPlaceName = view.findViewById(R.id.tvPlaceName);
+        TextView tvPlaceDescription = view.findViewById(R.id.tvPlaceDescription);
+        ImageView ivMarkerDetail = view.findViewById(R.id.ivMarkerDetail);
+        Button btnCloseMarker = view.findViewById(R.id.btnCloseMarker);
+
+        // set the values to the views
+        tvPlaceName.setText(placeName);
+        if (placeDescription != null) {
+            tvPlaceDescription.setText(placeDescription);
+        }
+        Glide.with(getContext()).load(mediaUrl).into(ivMarkerDetail);
+
+        // create a listener for the close marker detail button to go back to map fragment
+        btnCloseMarker.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // show the navbar again
+                getActivity().findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+
+                FragmentManager fm = getParentFragmentManager();
+                if (fm.getBackStackEntryCount() > 0) {
+                    // get the previous fragment (map fragment)
+                    fm.popBackStackImmediate();
+                } else {
+                    Log.i(TAG, "no fragment to go back to");
+                }
+            }
+        });
     }
 }

@@ -23,9 +23,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.appcompat.widget.SearchView;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.Status;
+import com.google.android.gms.dynamic.SupportFragmentWrapper;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -161,17 +165,21 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     /* Adds a click listener on markers
-     * Will update functionality of click later  */
+     * On marker click, a marker detail view opens up  */
     public void enableMarkerClicks() {
         map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(@NonNull Marker marker) {
-                // shows a toast with the marker title
-                Toast.makeText(getContext(), marker.getTitle(), Toast.LENGTH_SHORT).show();
-                MarkerDetailFragment markerDetail= new MarkerDetailFragment();
-                getActivity().getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragmentContainer, markerDetail)
-                        .commit();
+                // to set marker detail as a child fragment
+                FragmentManager childFragMan = getChildFragmentManager();
+                FragmentTransaction childFragTrans = childFragMan.beginTransaction();
+
+                // create a new marker detail fragment instance and pass in image url, place name, description
+                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance((String) marker.getTag(), marker.getTitle(), marker.getSnippet());
+                // add the child fragment to current map fragment
+                childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
+                childFragTrans.addToBackStack(null);
+                childFragTrans.commit();
                 return false;
             }
         });

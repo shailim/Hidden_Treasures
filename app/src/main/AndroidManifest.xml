@@ -36,9 +36,6 @@
             android:name=".CollectionActivity"
             android:exported="false" />
         <activity
-            android:name=".MarkerDetailActivity"
-            android:exported="false" />
-        <activity
             android:name=".SignUpActivity"
             android:exported="false" />
         <activity
