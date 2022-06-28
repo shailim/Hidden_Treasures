@@ -37,12 +37,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
-//import com.amazonaws.auth.AWSStaticCredentialsProvider;
-//import com.amazonaws.auth.BasicAWSCredentials;
-//import com.amazonaws.regions.Regions;
-//import com.amazonaws.services.s3.AmazonS3;
-//import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-//import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.google.android.gms.common.util.IOUtils;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -54,7 +49,9 @@ import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
 import com.parse.SaveCallback;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -216,12 +213,13 @@ public class CreateFragment extends Fragment {
             public void onClick(View v) {
                 // make sure a previous photo or video taken is removed from the view
                 setMediaPreviewInvisible();
+                videoFile = null;
 
                 // getting a file reference
                 photoFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_image_" + System.currentTimeMillis() + ".png");
 
                 // wrapping File object into a content provider
-                Uri fileProvider = getUriForFile(getContext(), "com.example.hidden_treasures.fileprovider", photoFile);
+                Uri fileProvider = getUriForFile(getContext(), getString(R.string.fileprovider_authority), photoFile);
 
                 // launch intent to open camera
                 cameraLauncher.launch(fileProvider);
@@ -234,11 +232,12 @@ public class CreateFragment extends Fragment {
             public void onClick(View v) {
                 // make sure a previous photo or video taken is removed from the view
                 setMediaPreviewInvisible();
+                photoFile = null;
 
                 // create intent to open video camera
                 Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
 
-                File videoPath = new File(getActivity().getFilesDir(), "media");
+                File videoPath = new File(getActivity().getFilesDir(), Environment.DIRECTORY_PICTURES);
                 videoFile = new File(videoPath, "share_video_" + System.currentTimeMillis() + ".mp4");
                 Uri contentUri = getUriForFile(getContext(), getString(R.string.fileprovider_authority), videoFile);
                 intent.setClipData(ClipData.newRawUri("", contentUri));
@@ -259,27 +258,40 @@ public class CreateFragment extends Fragment {
             @Override
             public void onClick(View v) {
 
-                // get the values for marker
-                String title = etTitle.getText().toString();
-                String description = etTitle.getText().toString();
-                ParseFile file = new ParseFile(videoFile);
-                ParseGeoPoint parseGeoPoint = new ParseGeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
-
-                // create a new ParseMarker object
-                ParseMarker parseMarker = new ParseMarker(title, description, file, parseGeoPoint);
-
-                // call the async query to save marker
-                parseMarker.saveInBackground(new SaveCallback() {
-                    @Override
-                    public void done(ParseException e) {
-                        if (e == null) {
-                            Log.i(TAG, "marker created!");
-                            Toast.makeText(getContext(), "marker created", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Log.e(TAG, e.getMessage());
-                        }
+                // don't save marker is there's no title or picture/video
+                if (etTitle.getText() == null || etTitle.getText().toString().isEmpty()) {
+                    Toast.makeText(getContext(), "Title is required", Toast.LENGTH_SHORT).show();
+                } else if (photoFile == null && videoFile == null) {
+                    Toast.makeText(getContext(), "A picture or video is required", Toast.LENGTH_SHORT).show();
+                } else {
+                    // get the values for marker
+                    String title = etTitle.getText().toString();
+                    String description = etDescription.getText().toString();
+                    ParseFile file;
+                    if (photoFile == null) {
+                        file = new ParseFile(photoFile);
+                    } else {
+                        file = new ParseFile(videoFile);
                     }
-                });
+                    ParseGeoPoint parseGeoPoint = new ParseGeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
+
+                    // create a new ParseMarker object
+                    ParseMarker parseMarker = new ParseMarker(title, description, file, parseGeoPoint);
+
+                    // call the async query to save marker
+                    parseMarker.saveInBackground(new SaveCallback() {
+                        @Override
+                        public void done(ParseException e) {
+                            if (e == null) {
+                                Log.i(TAG, "marker created!");
+                                Toast.makeText(getContext(), "marker created", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Log.e(TAG, "unable to save marker");
+                                Log.i(TAG, e.getMessage());
+                            }
+                        }
+                    });
+                }
             }
         });
     }
