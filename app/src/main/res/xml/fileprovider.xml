@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
+    <files-path name="media" path="media/"/>
     <external-path
         name="external"
         path="." />
@@ -11,8 +12,5 @@
         path="." />
     <external-cache-path
         name="external_cache"
-        path="." />
-    <files-path
-        name="files"
         path="." />
 </paths>

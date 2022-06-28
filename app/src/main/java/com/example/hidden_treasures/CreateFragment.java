@@ -1,7 +1,10 @@
 package com.example.hidden_treasures;
 
+import static androidx.core.content.FileProvider.getUriForFile;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -34,6 +37,12 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
+//import com.amazonaws.auth.AWSStaticCredentialsProvider;
+//import com.amazonaws.auth.BasicAWSCredentials;
+//import com.amazonaws.regions.Regions;
+//import com.amazonaws.services.s3.AmazonS3;
+//import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+//import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -91,6 +100,7 @@ public class CreateFragment extends Fragment {
                         Log.i(TAG, "took picture");
                         //decoding image
                         Bitmap takenImage = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
+                        Log.i(TAG, photoFile.getAbsolutePath());
 
                         // make image preview visible
                         ivPreview.setVisibility(View.VISIBLE);
@@ -108,6 +118,7 @@ public class CreateFragment extends Fragment {
         public void onActivityResult(ActivityResult result) {
             if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                 Uri contentURI = result.getData().getData();
+                Log.i(TAG, videoFile.getAbsolutePath());
                 vvPreview.setVisibility(View.VISIBLE);
                 vvPreview.setVideoURI(contentURI);
                 vvPreview.start();
@@ -210,7 +221,7 @@ public class CreateFragment extends Fragment {
                 photoFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_image_" + System.currentTimeMillis() + ".png");
 
                 // wrapping File object into a content provider
-                Uri fileProvider = FileProvider.getUriForFile(getContext(), "com.example.hidden_treasures.fileprovider", photoFile);
+                Uri fileProvider = getUriForFile(getContext(), "com.example.hidden_treasures.fileprovider", photoFile);
 
                 // launch intent to open camera
                 cameraLauncher.launch(fileProvider);
@@ -227,17 +238,12 @@ public class CreateFragment extends Fragment {
                 // create intent to open video camera
                 Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
 
-                // getting a file reference
-                //videoFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_video_" + System.currentTimeMillis() + ".mp4");
-                videoFile = new File(Environment.getExternalStorageDirectory(), "share_video_" + System.currentTimeMillis() + ".mp4");
-
-                // wrapping File object into a content provider
-                Uri fileProvider = FileProvider.getUriForFile(getActivity(), getString(R.string.fileprovider_authority), videoFile);
-
-                intent.putExtra(MediaStore.EXTRA_OUTPUT, fileProvider);
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-                //intent.setDataAndType(fileProvider, "video/mp4");
+                File videoPath = new File(getActivity().getFilesDir(), "media");
+                videoFile = new File(videoPath, "share_video_" + System.currentTimeMillis() + ".mp4");
+                Uri contentUri = getUriForFile(getContext(), getString(R.string.fileprovider_authority), videoFile);
+                intent.setClipData(ClipData.newRawUri("", contentUri));
+                intent.addFlags(
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
 
                 // only launch intent if it can be handled
                 if (getContext().getPackageManager().resolveActivity(intent, 0) != null) {
@@ -256,7 +262,7 @@ public class CreateFragment extends Fragment {
                 // get the values for marker
                 String title = etTitle.getText().toString();
                 String description = etTitle.getText().toString();
-                ParseFile file = new ParseFile(photoFile);
+                ParseFile file = new ParseFile(videoFile);
                 ParseGeoPoint parseGeoPoint = new ParseGeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
 
                 // create a new ParseMarker object
@@ -283,4 +289,5 @@ public class CreateFragment extends Fragment {
         ivPreview.setVisibility(View.INVISIBLE);
         vvPreview.setVisibility(View.INVISIBLE);
     }
+
 }

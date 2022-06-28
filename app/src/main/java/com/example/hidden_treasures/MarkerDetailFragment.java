@@ -9,6 +9,7 @@ import androidx.fragment.app.FragmentManager;
 
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -88,6 +89,25 @@ public class MarkerDetailFragment extends Fragment {
         btnCloseMarker.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // show the navbar again
+                getActivity().findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+
+                FragmentManager fm = getParentFragmentManager();
+                if (fm.getBackStackEntryCount() > 0) {
+                    // get the previous fragment (map fragment)
+                    fm.popBackStackImmediate();
+                } else {
+                    Log.i(TAG, "no fragment to go back to");
+                }
+            }
+        });
+
+        // set a touch listener to close the marker detail view when the user swipes down
+        view.setOnTouchListener(new onSwipeTouchListener(getContext()) {
+
+            @Override
+            public void onSwipeDown() {
+                super.onSwipeDown();
                 // show the navbar again
                 getActivity().findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
 

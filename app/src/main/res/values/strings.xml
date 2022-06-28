@@ -13,4 +13,7 @@
     <string name="take_picture">Take a Photo</string>
     <string name="take_video">Record a Video</string>
     <string name="fileprovider_authority">"com.example.hidden_treasures.fileprovider"</string>
+    <string name="aws_access_key_id">AKIAQ4ZFDTTK3ELL3MXT</string>
+    <string name="aws_secret_access_key">3mTYEHROslK+Ek21ODEuuN9xdRJ2Ap6aCuLt42qr</string>
+    <string name="bucket_name">hidden-treasures-media</string>
 </resources>
