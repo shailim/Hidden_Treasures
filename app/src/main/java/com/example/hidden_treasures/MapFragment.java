@@ -14,6 +14,7 @@ import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -64,10 +65,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public static final String TAG = "MapFragment";
 
+    private static final String PREV_LATITUDE = "prevLatitude";
+    private static final String PREV_LONGITUDE = "prevLogitude";
+    private static final String ZOOM_LEVEL = "prevZoomLevel";
+
+    private double prevLatitude;
+    private double prevLongitude;
+    private float zoomLevel;
+
     private List<ParseMarker> markers = new ArrayList<>();
 
     private GoogleMap map;
-    private SearchView searchLocation;
 
     public MapFragment() {
         // Required empty public constructor
@@ -81,11 +89,21 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (savedInstanceState != null) {
+            prevLatitude = savedInstanceState.getDouble(PREV_LATITUDE);
+            prevLongitude = savedInstanceState.getDouble(PREV_LONGITUDE);
+            zoomLevel = savedInstanceState.getFloat(ZOOM_LEVEL);
+        } else {
+            prevLatitude = 37.0902;
+            prevLongitude = -95.7129;
+            zoomLevel = 5;
+        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_map, container, false);
 
@@ -108,14 +126,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
+        Log.i(TAG, "on save instance being called");
+        outState.putDouble(PREV_LATITUDE, map.getCameraPosition().target.latitude);
+        outState.putDouble(PREV_LONGITUDE, map.getCameraPosition().target.longitude);
+        outState.putFloat(ZOOM_LEVEL, map.getCameraPosition().zoom);
     }
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         Log.i(TAG, "showing map");
         this.map = googleMap;
-        //setting initial position to show the whole world
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(40.52, 34.3), 0));
+        // initial position should show where the user was previously looking
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(prevLatitude, prevLongitude), zoomLevel));
         //get markers from database and place on map
         getMarkers();
         // enables any markers on the map to be clickable
@@ -228,7 +250,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                                 getActivity().runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), 15));
+                                        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), 10));
                                     }
                                 });
                             }

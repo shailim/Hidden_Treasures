@@ -67,7 +67,6 @@ public class CreateFragment extends Fragment {
     private ImageView ivPreview;
     private VideoView vvPreview;
     private Button btnTakePicture;
-    private Button btnTakeVideo;
 
     private Location currentLocation;
     private FusedLocationProviderClient fusedLocationProviderClient;
@@ -110,21 +109,6 @@ public class CreateFragment extends Fragment {
                 }
             });
 
-    private final ActivityResultLauncher<Intent> videoLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
-        @Override
-        public void onActivityResult(ActivityResult result) {
-            if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                Uri contentURI = result.getData().getData();
-                Log.i(TAG, videoFile.getAbsolutePath());
-                vvPreview.setVisibility(View.VISIBLE);
-                vvPreview.setVideoURI(contentURI);
-                vvPreview.start();
-            } else {
-                Log.i(TAG, "didn't get video");
-            }
-        }
-    });
-
 
     public CreateFragment() {
         // Required empty public constructor
@@ -158,12 +142,10 @@ public class CreateFragment extends Fragment {
 
         // get references to all the views in layout
         ivPreview = view.findViewById(R.id.ivPreview);
-        vvPreview = view.findViewById(R.id.vvPreview);
         etTitle = view.findViewById(R.id.etTitle);
         etDescription = view.findViewById(R.id.etDescription);
         btnSubmitMarker = view.findViewById(R.id.btnSubmitMarker);
         btnTakePicture = view.findViewById(R.id.btnTakePicture);
-        btnTakeVideo = view.findViewById(R.id.btnTakeVideo);
 
         // set the onClick listeners for picture and video button
         setButtonListeners();
@@ -211,9 +193,6 @@ public class CreateFragment extends Fragment {
         btnTakePicture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // make sure a previous photo or video taken is removed from the view
-                setMediaPreviewInvisible();
-                videoFile = null;
 
                 // getting a file reference
                 photoFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_image_" + System.currentTimeMillis() + ".png");
@@ -223,33 +202,6 @@ public class CreateFragment extends Fragment {
 
                 // launch intent to open camera
                 cameraLauncher.launch(fileProvider);
-            }
-        });
-
-        /* Take Video */
-        btnTakeVideo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // make sure a previous photo or video taken is removed from the view
-                setMediaPreviewInvisible();
-                photoFile = null;
-
-                // create intent to open video camera
-                Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-
-                File videoPath = new File(getActivity().getFilesDir(), Environment.DIRECTORY_PICTURES);
-                videoFile = new File(videoPath, "share_video_" + System.currentTimeMillis() + ".mp4");
-                Uri contentUri = getUriForFile(getContext(), getString(R.string.fileprovider_authority), videoFile);
-                intent.setClipData(ClipData.newRawUri("", contentUri));
-                intent.addFlags(
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-
-                // only launch intent if it can be handled
-                if (getContext().getPackageManager().resolveActivity(intent, 0) != null) {
-                    videoLauncher.launch(intent);
-                } else {
-                    Toast.makeText(getContext(), "No apps supports this action", Toast.LENGTH_SHORT).show();
-                }
             }
         });
 
@@ -267,12 +219,7 @@ public class CreateFragment extends Fragment {
                     // get the values for marker
                     String title = etTitle.getText().toString();
                     String description = etDescription.getText().toString();
-                    ParseFile file;
-                    if (photoFile == null) {
-                        file = new ParseFile(photoFile);
-                    } else {
-                        file = new ParseFile(videoFile);
-                    }
+                    ParseFile file = new ParseFile(photoFile);
                     ParseGeoPoint parseGeoPoint = new ParseGeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
 
                     // create a new ParseMarker object
@@ -294,12 +241,6 @@ public class CreateFragment extends Fragment {
                 }
             }
         });
-    }
-
-    /* Resets the image and video views to invisible whenever user takes a new picture/video*/
-    private void setMediaPreviewInvisible() {
-        ivPreview.setVisibility(View.INVISIBLE);
-        vvPreview.setVisibility(View.INVISIBLE);
     }
 
 }
