@@ -232,6 +232,9 @@ public class CreateFragment extends Fragment {
                             if (e == null) {
                                 Log.i(TAG, "marker created!");
                                 Toast.makeText(getContext(), "marker created", Toast.LENGTH_SHORT).show();
+                                //getActivity().getSupportFragmentManager().beginTransaction().add(R.id.fragmentContainer, MapFragment.newInstance(title, description, currentLocation, file.getUrl())).commit();
+                                MainActivity main = (MainActivity) getActivity();
+                                main.switchTab(R.id.action_map, title, description, currentLocation, file.getUrl());
                             } else {
                                 Log.e(TAG, "unable to save marker");
                                 Log.i(TAG, e.getMessage());

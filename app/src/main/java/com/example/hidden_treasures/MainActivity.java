@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import android.location.Location;
 import android.os.Bundle;
 import android.view.MenuItem;
 
@@ -19,19 +20,28 @@ public class MainActivity extends AppCompatActivity {
     private CreateFragment createFragment;
     private ProfileFragment profileFragment;
 
+    // find the bottom navigation view
+    public BottomNavigationView bottomNavigationView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        bottomNavigationView = findViewById(R.id.bottom_navigation);
+
         if (savedInstanceState == null) {
             mapFragment = MapFragment.newInstance();
             createFragment = CreateFragment.newInstance();
             profileFragment = ProfileFragment.newInstance();
         }
 
-        // find the bottom navigation view
-        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        handleBottomNavSelection();
+        // default tab is map
+        bottomNavigationView.setSelectedItemId(R.id.action_map);
+    }
 
+    public void handleBottomNavSelection() {
         // handling navigation selection
         bottomNavigationView.setOnItemSelectedListener(
                 new NavigationBarView.OnItemSelectedListener() {
@@ -51,12 +61,16 @@ public class MainActivity extends AppCompatActivity {
                         return true;
                     }
                 });
-        // default tab is map
-        bottomNavigationView.setSelectedItemId(R.id.action_map);
+    }
+
+    public void switchTab(int id, String title, String description, Location location, String imageUrl) {
+        bottomNavigationView.setSelectedItemId(id);
+        displayMapFragment(title, description, location, imageUrl);
+        handleBottomNavSelection();
     }
 
     /* shows map fragment and hides the other fragments */
-    protected void displayMapFragment() {
+    public void displayMapFragment() {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         if (mapFragment.isAdded()) { // if the fragment is already in container
             ft.show(mapFragment);
@@ -71,8 +85,25 @@ public class MainActivity extends AppCompatActivity {
         ft.commit();
     }
 
+    /* shows map fragment and hides the other fragments */
+    public void displayMapFragment(String title, String description, Location location, String imageUrl) {
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        if (mapFragment.isAdded()) { // if the fragment is already in container
+            ft.show(mapFragment);
+        } else { // fragment needs to be added to frame container
+            ft.add(R.id.fragmentContainer, mapFragment);
+        }
+        mapFragment.addCreatedMarker(title, description, location, imageUrl);
+        // Hide create fragment
+        if (createFragment.isAdded()) { ft.hide(createFragment); }
+        // Hide profile fragment
+        if (profileFragment.isAdded()) { ft.hide(profileFragment); }
+        // Commit changes
+        ft.commit();
+    }
+
     /* shows create fragment and hides the other fragments */
-    protected void displayCreateFragment() {
+    public void displayCreateFragment() {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         if (createFragment.isAdded()) { // if the fragment is already in container
             ft.show(createFragment);
@@ -88,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /* shows profile fragment and hides the other fragments */
-    protected void displayProfileFragment() {
+    public void displayProfileFragment() {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         if (profileFragment.isAdded()) { // if the fragment is already in container
             ft.show(profileFragment);

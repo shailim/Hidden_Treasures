@@ -19,6 +19,7 @@ import androidx.annotation.UiThread;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,6 +39,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -55,6 +57,7 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.SaveCallback;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,6 +76,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private double prevLongitude;
     private float zoomLevel;
 
+    private String createdMarkerTitle;
+    private String createdMarkerDescription;
+    private Location createdMarkerLocation;
+    private String createdMarkerMediaUrl;
+
     private List<ParseMarker> markers = new ArrayList<>();
 
     private GoogleMap map;
@@ -86,9 +94,26 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         return fragment;
     }
 
+    public static MapFragment newInstance(String title, String description, Location location, String mediaUrl) {
+        MapFragment fragment = new MapFragment();
+        Bundle args = new Bundle();
+        args.putString(ParseMarker.TITLE, title);
+        args.putString(ParseMarker.DESCRIPTION, description);
+        args.putParcelable(ParseMarker.LOCATION, location);
+        args.putString(ParseMarker.MEDIA, mediaUrl);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            createdMarkerTitle = getArguments().getString(ParseMarker.TITLE);
+            createdMarkerDescription = getArguments().getString(ParseMarker.DESCRIPTION);
+            createdMarkerLocation = getArguments().getParcelable(ParseMarker.LOCATION);
+            createdMarkerMediaUrl = getArguments().getString(ParseMarker.MEDIA);
+        }
         if (savedInstanceState != null) {
             prevLatitude = savedInstanceState.getDouble(PREV_LATITUDE);
             prevLongitude = savedInstanceState.getDouble(PREV_LONGITUDE);
@@ -134,10 +159,23 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
-        Log.i(TAG, "showing map");
         this.map = googleMap;
-        // initial position should show where the user was previously looking
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(prevLatitude, prevLongitude), zoomLevel));
+        map.setMapStyle(new MapStyleOptions(getResources()
+                .getString(R.string.map_style_json)));
+        Log.i(TAG, "showing map");
+//        if (createdMarkerTitle != null) {
+//            LatLng userLocation = new LatLng(createdMarkerLocation.getLatitude(), createdMarkerLocation.getLongitude());
+//            Marker createdMarker = map.addMarker(new MarkerOptions()
+//                    .position(userLocation)
+//                    .title(createdMarkerTitle));
+//            // set the tag as the image url
+//            createdMarker.setTag(createdMarkerMediaUrl);
+//            createdMarker.setSnippet(createdMarkerDescription);
+//            map.animateCamera(CameraUpdateFactory.newLatLngZoom(userLocation, zoomLevel));
+//        } else {
+            // initial position should show where the user was previously looking
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(prevLatitude, prevLongitude), zoomLevel));
+       // }
         //get markers from database and place on map
         getMarkers();
         // enables any markers on the map to be clickable
@@ -183,6 +221,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 createdMarker.setSnippet(description);
             }
             Log.i(TAG, "placed markers on map");
+        }
+    }
+
+    public void addCreatedMarker(String title, String description, Location location, String imageUrl) {
+        if (title != null) {
+            //LatLng userLocation = new LatLng(location.getLatitude(), location.getLongitude());
+            LatLng userLocation = new LatLng(48.8566, 2.3522);
+            Marker createdMarker = map.addMarker(new MarkerOptions()
+                    .position(userLocation)
+                    .title(title));
+            // set the tag as the image url
+            createdMarker.setTag(imageUrl);
+            createdMarker.setSnippet(description);
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(userLocation, zoomLevel));
         }
     }
 
