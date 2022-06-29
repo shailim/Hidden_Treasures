@@ -14,13 +14,16 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.util.PrintStreamPrinter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 import android.widget.VideoView;
@@ -36,6 +39,8 @@ import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.gms.common.util.IOUtils;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -52,6 +57,7 @@ import com.parse.SaveCallback;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -59,14 +65,16 @@ public class CreateFragment extends Fragment {
 
     private static final String TAG = "CreateFragment";
 
+    public static String BITMAP_IMAGE = "takenImage";
+    public static String PHOTO_FILE = "photoFile";
+
     private File photoFile;
-    private File videoFile;
+    private Bitmap takenImage;
     private EditText etTitle;
     private EditText etDescription;
-    private Button btnSubmitMarker;
+    private ImageButton backToCamera;
+    private ImageButton btnSubmitMarker;
     private ImageView ivPreview;
-    private VideoView vvPreview;
-    private Button btnTakePicture;
 
     private Location currentLocation;
     private FusedLocationProviderClient fusedLocationProviderClient;
@@ -87,47 +95,32 @@ public class CreateFragment extends Fragment {
                 }
             });
 
-    private ActivityResultLauncher<Uri> cameraLauncher = registerForActivityResult(
-            new ActivityResultContracts.TakePicture(),
-            new ActivityResultCallback<Boolean>() {
-                @Override
-                public void onActivityResult(Boolean result) {
-                    if (result == true) {
-                        Log.i(TAG, "took picture");
-                        //decoding image
-                        Bitmap takenImage = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
-                        Log.i(TAG, photoFile.getAbsolutePath());
-
-                        // make image preview visible
-                        ivPreview.setVisibility(View.VISIBLE);
-
-                        //setting the image to the image preview in layout
-                        ivPreview.setImageBitmap(takenImage);
-                    } else {
-                        Log.e(TAG, "picture wasn't taken");
-                    }
-                }
-            });
-
 
     public CreateFragment() {
         // Required empty public constructor
     }
 
-    public static CreateFragment newInstance() {
+    public static CreateFragment newInstance(Bitmap takenImage, File photoFile) {
         CreateFragment fragment = new CreateFragment();
+        Bundle args = new Bundle();
+        args.putParcelable(BITMAP_IMAGE, takenImage);
+        args.putSerializable(PHOTO_FILE, photoFile);
+        fragment.setArguments(args);
         return fragment;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            photoFile = (File) getArguments().getSerializable(PHOTO_FILE);
+            takenImage = getArguments().getParcelable(BITMAP_IMAGE);
+        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_create, container, false);
     }
@@ -135,6 +128,9 @@ public class CreateFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // don't show nav bar here
+        getActivity().findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
 
         // get location permission and user's current location
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getContext());
@@ -144,8 +140,10 @@ public class CreateFragment extends Fragment {
         ivPreview = view.findViewById(R.id.ivPreview);
         etTitle = view.findViewById(R.id.etTitle);
         etDescription = view.findViewById(R.id.etDescription);
+        backToCamera = view.findViewById(R.id.backToCamera);
         btnSubmitMarker = view.findViewById(R.id.btnSubmitMarker);
-        btnTakePicture = view.findViewById(R.id.btnTakePicture);
+
+        ivPreview.setImageBitmap(takenImage);
 
         // set the onClick listeners for picture and video button
         setButtonListeners();
@@ -189,19 +187,22 @@ public class CreateFragment extends Fragment {
 
     /* Sets the onClickListeners for any buttons */
     private void setButtonListeners() {
-        /* Take Picture */
-        btnTakePicture.setOnClickListener(new View.OnClickListener() {
+
+        backToCamera.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View view) {
+                Log.i(TAG, "clicked on back to camera");
+                // show the navbar again
+                getActivity().findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
 
-                // getting a file reference
-                photoFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_image_" + System.currentTimeMillis() + ".png");
-
-                // wrapping File object into a content provider
-                Uri fileProvider = getUriForFile(getContext(), getString(R.string.fileprovider_authority), photoFile);
-
-                // launch intent to open camera
-                cameraLauncher.launch(fileProvider);
+                FragmentManager fm = getParentFragmentManager();
+                if (fm.getBackStackEntryCount() > 0) {
+                    // get the previous fragment (camera fragment)
+                    fm.beginTransaction().remove(CreateFragment.this);
+                    fm.popBackStackImmediate();
+                } else {
+                    Log.i(TAG, "no fragment to go back to");
+                }
             }
         });
 
@@ -213,7 +214,7 @@ public class CreateFragment extends Fragment {
                 // don't save marker is there's no title or picture/video
                 if (etTitle.getText() == null || etTitle.getText().toString().isEmpty()) {
                     Toast.makeText(getContext(), "Title is required", Toast.LENGTH_SHORT).show();
-                } else if (photoFile == null && videoFile == null) {
+                } else if (photoFile == null) {
                     Toast.makeText(getContext(), "A picture or video is required", Toast.LENGTH_SHORT).show();
                 } else {
                     // get the values for marker
@@ -232,9 +233,14 @@ public class CreateFragment extends Fragment {
                             if (e == null) {
                                 Log.i(TAG, "marker created!");
                                 Toast.makeText(getContext(), "marker created", Toast.LENGTH_SHORT).show();
-                                //getActivity().getSupportFragmentManager().beginTransaction().add(R.id.fragmentContainer, MapFragment.newInstance(title, description, currentLocation, file.getUrl())).commit();
+
+                                // remove this fragment
+                                FragmentTransaction ft = getParentFragmentManager().beginTransaction();
+                                ft.remove(CreateFragment.this);
+
+                                // go to map fragment
                                 MainActivity main = (MainActivity) getActivity();
-                                main.switchTab(R.id.action_map, title, description, currentLocation, file.getUrl());
+                                main.switchTab(R.id.action_map, CreateFragment.this, title, description, currentLocation, file.getUrl());
                             } else {
                                 Log.e(TAG, "unable to save marker");
                                 Log.i(TAG, e.getMessage());

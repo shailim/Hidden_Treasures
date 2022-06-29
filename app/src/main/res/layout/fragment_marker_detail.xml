@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:elevation="2dp"
+    android:background="@color/white"
+    android:elevation="3dp"
     tools:context=".MarkerDetailFragment">
 
     <Button
@@ -21,7 +22,6 @@
         android:id="@+id/ivMarkerDetail"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="fitXY"
         app:layout_constraintTop_toBottomOf="@+id/btnCloseMarker"
         tools:src="@tools:sample/avatars" />
 

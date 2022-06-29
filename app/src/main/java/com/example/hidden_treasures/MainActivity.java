@@ -8,7 +8,9 @@ import androidx.fragment.app.FragmentTransaction;
 
 import android.location.Location;
 import android.os.Bundle;
+import android.view.ContextMenu;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
@@ -17,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private MapFragment mapFragment;
-    private CreateFragment createFragment;
+    private CameraFragment cameraFragment;
     private ProfileFragment profileFragment;
 
     // find the bottom navigation view
@@ -32,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             mapFragment = MapFragment.newInstance();
-            createFragment = CreateFragment.newInstance();
+            cameraFragment = CameraFragment.newInstance();
             profileFragment = ProfileFragment.newInstance();
         }
 
@@ -63,7 +65,10 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    public void switchTab(int id, String title, String description, Location location, String imageUrl) {
+    public void switchTab(int id, Fragment fragment, String title, String description, Location location, String imageUrl) {
+        //set navbar to visible again
+        bottomNavigationView.setVisibility(View.VISIBLE);
+        //set selected tab to map
         bottomNavigationView.setSelectedItemId(id);
         displayMapFragment(title, description, location, imageUrl);
         handleBottomNavSelection();
@@ -78,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
             ft.add(R.id.fragmentContainer, mapFragment);
         }
         // Hide create fragment
-        if (createFragment.isAdded()) { ft.hide(createFragment); }
+        if (cameraFragment.isAdded()) { ft.hide(cameraFragment); }
         // Hide profile fragment
         if (profileFragment.isAdded()) { ft.hide(profileFragment); }
         // Commit changes
@@ -95,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
         }
         mapFragment.addCreatedMarker(title, description, location, imageUrl);
         // Hide create fragment
-        if (createFragment.isAdded()) { ft.hide(createFragment); }
+        if (cameraFragment.isAdded()) { ft.remove(cameraFragment); }
         // Hide profile fragment
         if (profileFragment.isAdded()) { ft.hide(profileFragment); }
         // Commit changes
@@ -105,10 +110,13 @@ public class MainActivity extends AppCompatActivity {
     /* shows create fragment and hides the other fragments */
     public void displayCreateFragment() {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        if (createFragment.isAdded()) { // if the fragment is already in container
-            ft.show(createFragment);
+        if (cameraFragment.isAdded()) { // if the fragment is already in container
+            ft.remove(cameraFragment);
+            //cameraFragment = CameraFragment.newInstance();
+            ft.add(R.id.fragmentContainer, CameraFragment.newInstance());
+            //ft.show(cameraFragment);
         } else { // fragment needs to be added to frame container
-            ft.add(R.id.fragmentContainer, createFragment);
+            ft.add(R.id.fragmentContainer, cameraFragment);
         }
         // Hide map fragment
         if (mapFragment.isAdded()) { ft.hide(mapFragment); }
@@ -129,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
         // Hide map fragment
         if (mapFragment.isAdded()) { ft.hide(mapFragment); }
         // Hide create fragment
-        if (createFragment.isAdded()) { ft.hide(createFragment); }
+        if (cameraFragment.isAdded()) { ft.remove(cameraFragment); }
         // Commit changes
         ft.commit();
     }

@@ -163,19 +163,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         map.setMapStyle(new MapStyleOptions(getResources()
                 .getString(R.string.map_style_json)));
         Log.i(TAG, "showing map");
-//        if (createdMarkerTitle != null) {
-//            LatLng userLocation = new LatLng(createdMarkerLocation.getLatitude(), createdMarkerLocation.getLongitude());
-//            Marker createdMarker = map.addMarker(new MarkerOptions()
-//                    .position(userLocation)
-//                    .title(createdMarkerTitle));
-//            // set the tag as the image url
-//            createdMarker.setTag(createdMarkerMediaUrl);
-//            createdMarker.setSnippet(createdMarkerDescription);
-//            map.animateCamera(CameraUpdateFactory.newLatLngZoom(userLocation, zoomLevel));
-//        } else {
-            // initial position should show where the user was previously looking
-            map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(prevLatitude, prevLongitude), zoomLevel));
-       // }
+        // initial position should show where the user was previously looking
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(prevLatitude, prevLongitude), zoomLevel));
+
         //get markers from database and place on map
         getMarkers();
         // enables any markers on the map to be clickable

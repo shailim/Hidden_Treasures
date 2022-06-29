@@ -5,15 +5,25 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_margin="20dp"
+    android:elevation="2dp"
     tools:context=".CreateFragment">
+
+        <ImageButton
+            android:id="@+id/backToCamera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_baseline_arrow_back_24"
+            android:backgroundTint="@color/white"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <EditText
             android:id="@+id/etTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
             android:hint="@string/title_hint"
-            android:inputType="text" />
+            android:inputType="text"
+            app:layout_constraintTop_toBottomOf="@+id/backToCamera" />
 
         <EditText
             android:id="@+id/etDescription"
@@ -23,30 +33,23 @@
             android:hint="@string/description_hint"
             android:inputType="textImeMultiLine" />
 
-        <Button
-            android:id="@+id/btnTakePicture"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@id/etDescription"
-            app:layout_constraintStart_toStartOf="@id/etDescription"
-            android:text="@string/take_picture"/>
-
         <ImageView
             android:id="@+id/ivPreview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="invisible"
+            android:visibility="visible"
             app:layout_constraintBottom_toTopOf="@id/btnSubmitMarker"
-            app:layout_constraintTop_toBottomOf="@id/btnTakePicture"
+            app:layout_constraintTop_toBottomOf="@id/etDescription"
             tools:srcCompat="@tools:sample/avatars" />
 
-        <Button
+        <ImageButton
             android:id="@+id/btnSubmitMarker"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/submit_marker"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            android:layout_width="19dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_baseline_send_24"
+            android:backgroundTint="@color/white"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toRightOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

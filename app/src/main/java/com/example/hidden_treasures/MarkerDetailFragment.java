@@ -70,7 +70,7 @@ public class MarkerDetailFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // don't show nav bar here
-        getActivity().findViewById(R.id.bottom_navigation).setVisibility(View.INVISIBLE);
+        getActivity().findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
 
         // get references to views in marker detail layout
         TextView tvPlaceName = view.findViewById(R.id.tvPlaceName);
