@@ -77,12 +77,12 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    public void switchTab(int id, Fragment fragment, String title, String description, Location location, String imageUrl) {
+    public void switchTab(int id, String title, Location location, String imageUrl) {
         //set navbar to visible again
         bottomNavigationView.setVisibility(View.VISIBLE);
         //set selected tab to map
         bottomNavigationView.setSelectedItemId(id);
-        displayMapFragment(title, description, location, imageUrl);
+        displayMapFragment(title, location, imageUrl);
         handleBottomNavSelection();
     }
 
@@ -103,14 +103,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /* shows map fragment and hides the other fragments */
-    public void displayMapFragment(String title, String description, Location location, String imageUrl) {
+    public void displayMapFragment(String title, Location location, String imageUrl) {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         if (mapFragment.isAdded()) { // if the fragment is already in container
             ft.show(mapFragment);
         } else { // fragment needs to be added to frame container
             ft.add(R.id.fragmentContainer, mapFragment);
         }
-        mapFragment.addCreatedMarker(title, description, location, imageUrl);
+        mapFragment.addCreatedMarker(title, location, imageUrl);
         // Hide create fragment
         if (cameraFragment.isAdded()) { ft.remove(cameraFragment); }
         // Hide profile fragment

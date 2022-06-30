@@ -71,7 +71,6 @@ public class CreateFragment extends Fragment {
     private File photoFile;
     private Bitmap takenImage;
     private EditText etTitle;
-    private EditText etDescription;
     private ImageButton backToCamera;
     private ImageButton btnSubmitMarker;
     private ImageView ivPreview;
@@ -139,7 +138,6 @@ public class CreateFragment extends Fragment {
         // get references to all the views in layout
         ivPreview = view.findViewById(R.id.ivPreview);
         etTitle = view.findViewById(R.id.etTitle);
-        etDescription = view.findViewById(R.id.etDescription);
         backToCamera = view.findViewById(R.id.backToCamera);
         btnSubmitMarker = view.findViewById(R.id.btnSubmitMarker);
 
@@ -219,12 +217,11 @@ public class CreateFragment extends Fragment {
                 } else {
                     // get the values for marker
                     String title = etTitle.getText().toString();
-                    String description = etDescription.getText().toString();
                     ParseFile file = new ParseFile(photoFile);
                     ParseGeoPoint parseGeoPoint = new ParseGeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
 
                     // create a new ParseMarker object
-                    ParseMarker parseMarker = new ParseMarker(title, description, file, parseGeoPoint);
+                    ParseMarker parseMarker = new ParseMarker(title, file, parseGeoPoint);
 
                     // call the async query to save marker
                     parseMarker.saveInBackground(new SaveCallback() {
@@ -240,7 +237,7 @@ public class CreateFragment extends Fragment {
 
                                 // go to map fragment
                                 MainActivity main = (MainActivity) getActivity();
-                                main.switchTab(R.id.action_map, CreateFragment.this, title, description, currentLocation, file.getUrl());
+                                main.switchTab(R.id.action_map, title, currentLocation, file.getUrl());
                             } else {
                                 Log.e(TAG, "unable to save marker");
                                 Log.i(TAG, e.getMessage());

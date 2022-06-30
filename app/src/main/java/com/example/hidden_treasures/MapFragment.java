@@ -77,7 +77,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private float zoomLevel;
 
     private String createdMarkerTitle;
-    private String createdMarkerDescription;
     private Location createdMarkerLocation;
     private String createdMarkerMediaUrl;
 
@@ -94,11 +93,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         return fragment;
     }
 
-    public static MapFragment newInstance(String title, String description, Location location, String mediaUrl) {
+    public static MapFragment newInstance(String title, Location location, String mediaUrl) {
         MapFragment fragment = new MapFragment();
         Bundle args = new Bundle();
         args.putString(ParseMarker.TITLE, title);
-        args.putString(ParseMarker.DESCRIPTION, description);
         args.putParcelable(ParseMarker.LOCATION, location);
         args.putString(ParseMarker.MEDIA, mediaUrl);
         fragment.setArguments(args);
@@ -110,7 +108,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             createdMarkerTitle = getArguments().getString(ParseMarker.TITLE);
-            createdMarkerDescription = getArguments().getString(ParseMarker.DESCRIPTION);
             createdMarkerLocation = getArguments().getParcelable(ParseMarker.LOCATION);
             createdMarkerMediaUrl = getArguments().getString(ParseMarker.MEDIA);
         }
@@ -200,7 +197,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 // get the marker values
                 LatLng userLocation = new LatLng(marker.getLocation().getLatitude(), marker.getLocation().getLongitude());
                 String title = marker.getTitle();
-                String description = marker.getDescription();
                 ParseFile media = marker.getMedia();
                 //create a new marker object with the values
                 Marker createdMarker = map.addMarker(new MarkerOptions()
@@ -208,13 +204,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         .title(title));
                 // set the tag as the image url
                 createdMarker.setTag(media.getUrl());
-                createdMarker.setSnippet(description);
             }
             Log.i(TAG, "placed markers on map");
         }
     }
 
-    public void addCreatedMarker(String title, String description, Location location, String imageUrl) {
+    public void addCreatedMarker(String title, Location location, String imageUrl) {
         if (title != null) {
             //LatLng userLocation = new LatLng(location.getLatitude(), location.getLongitude());
             LatLng userLocation = new LatLng(48.8566, 2.3522);
@@ -223,7 +218,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     .title(title));
             // set the tag as the image url
             createdMarker.setTag(imageUrl);
-            createdMarker.setSnippet(description);
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(userLocation, zoomLevel));
         }
     }
@@ -239,7 +233,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
                 // create a new marker detail fragment instance and pass in image url, place name, description
-                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance((String) marker.getTag(), marker.getTitle(), marker.getSnippet());
+                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance((String) marker.getTag(), marker.getTitle());
                 // add the child fragment to current map fragment
                 childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
                 childFragTrans.addToBackStack(null);

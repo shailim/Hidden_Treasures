@@ -27,23 +27,20 @@ public class MarkerDetailFragment extends Fragment {
 
     private static final String MEDIA_URL = "mediaUrl";
     private static final String PLACE_NAME = "placeName";
-    private static final String PLACE_DESCRIPTION = "placeDescription";
 
     private String mediaUrl;
     private String placeName;
-    private String placeDescription;
 
     public MarkerDetailFragment() {
         // Required empty public constructor
     }
 
 
-    public static MarkerDetailFragment newInstance(String mediaUrl, String placeName, String placeDescription) {
+    public static MarkerDetailFragment newInstance(String mediaUrl, String placeName) {
         MarkerDetailFragment fragment = new MarkerDetailFragment();
         Bundle args = new Bundle();
         args.putString(MEDIA_URL, mediaUrl);
         args.putString(PLACE_NAME, placeName);
-        args.putString(PLACE_DESCRIPTION, placeDescription);
         fragment.setArguments(args);
         return fragment;
     }
@@ -54,7 +51,6 @@ public class MarkerDetailFragment extends Fragment {
         if (getArguments() != null) {
             mediaUrl = getArguments().getString(MEDIA_URL);
             placeName = getArguments().getString(PLACE_NAME);
-            placeDescription = getArguments().getString(PLACE_DESCRIPTION);
         }
     }
 
@@ -74,15 +70,11 @@ public class MarkerDetailFragment extends Fragment {
 
         // get references to views in marker detail layout
         TextView tvPlaceName = view.findViewById(R.id.tvPlaceName);
-        TextView tvPlaceDescription = view.findViewById(R.id.tvPlaceDescription);
         ImageView ivMarkerDetail = view.findViewById(R.id.ivMarkerDetail);
         Button btnCloseMarker = view.findViewById(R.id.btnCloseMarker);
 
         // set the values to the views
         tvPlaceName.setText(placeName);
-        if (placeDescription != null) {
-            tvPlaceDescription.setText(placeDescription);
-        }
         Glide.with(getContext()).load(mediaUrl).into(ivMarkerDetail);
 
         // create a listener for the close marker detail button to go back to map fragment

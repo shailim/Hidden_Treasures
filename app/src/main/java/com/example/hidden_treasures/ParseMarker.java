@@ -9,16 +9,16 @@ import com.parse.ParseObject;
 public class ParseMarker extends ParseObject {
     public static final String MEDIA = "media";
     public static final String TITLE = "title";
-    public static final String DESCRIPTION = "description";
     public static final String LOCATION = "location";
     public static final String VIEW_COUNT = "view_count";
 
     public ParseMarker() {}
 
-    public ParseMarker(String title, String description, ParseFile media, ParseGeoPoint location) {
+    public ParseMarker(String title, ParseFile media, ParseGeoPoint location) {
         put(TITLE, title);
-        put(DESCRIPTION, description);
-        put(MEDIA, media);
+        if (media != null) {
+            put(MEDIA, media);
+        }
         put(LOCATION, location);
     }
 
@@ -28,10 +28,6 @@ public class ParseMarker extends ParseObject {
 
     public String getTitle() {
         return getString(TITLE);
-    }
-
-    public String getDescription() {
-        return getString(DESCRIPTION);
     }
 
     public ParseGeoPoint getLocation() {
@@ -48,10 +44,6 @@ public class ParseMarker extends ParseObject {
 
     public void setTitle(String title) {
         put(TITLE, title);
-    }
-
-    public void setDescription(String description) {
-        put(DESCRIPTION, description);
     }
 
     public void setLocation(ParseGeoPoint location) {

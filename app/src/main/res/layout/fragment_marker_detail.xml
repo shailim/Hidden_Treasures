@@ -48,15 +48,6 @@
                 android:elevation="5dp"
                 android:textColor="@color/black"
                 android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvPlaceDescription"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:elevation="5dp"
-                android:textSize="10sp"
-                android:textColor="#6c6c6c"
-                android:textAppearance="@style/TextAppearance.AppCompat.Small" />
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>
