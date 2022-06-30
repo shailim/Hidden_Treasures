@@ -6,14 +6,18 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import android.annotation.SuppressLint;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.view.ContextMenu;
 import android.view.MenuItem;
 import android.view.View;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
+
+import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -25,10 +29,18 @@ public class MainActivity extends AppCompatActivity {
     // find the bottom navigation view
     public BottomNavigationView bottomNavigationView;
 
+    @SuppressLint("WrongThread")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        GenerateTestData testData = new GenerateTestData();
+        try {
+            testData.getData(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 

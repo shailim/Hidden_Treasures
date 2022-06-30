@@ -28,6 +28,16 @@ android {
         coreLibraryDesugaringEnabled true
     }
 
+    configurations {
+        compile.exclude group: "junit", module: "junit"
+    }
+
+    configurations.all {
+        resolutionStrategy.dependencySubstitution {
+            substitute module('org.hamcrest:hamcrest-core:1.1') with module('junit:junit:4.10')
+        }
+    }
+
     packagingOptions {
         exclude 'META-INF/DEPENDENCIES'
         exclude 'META-INF/LICENSE'
@@ -56,4 +66,6 @@ dependencies {
     annotationProcessor 'com.github.bumptech.glide:compiler:4.12.0'
     implementation 'com.amplifyframework:core:1.36.0'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+//    implementation 'com.github.cliftonlabs:json-simple:4.0.1'
 }

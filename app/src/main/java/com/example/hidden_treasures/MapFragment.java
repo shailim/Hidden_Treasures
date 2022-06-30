@@ -256,6 +256,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public void onCameraMove() {
             }
+
+
+        });
+
+        map.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
+            @Override
+            public void onCameraIdle() {
+                Log.i(TAG, "camera is idle");
+            }
         });
     }
 
