@@ -42,7 +42,7 @@ public class GenerateTestData {
 
             // get the image used before
             ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
-            ParseMarker marker = markerQuery.get("1J0Qw5BLDV");
+            ParseMarker marker = markerQuery.get("gfwdSfxouE");
             ParseFile image = marker.getMedia();
 
             String obj = jsonParser.parse(reader).toString();
@@ -52,7 +52,7 @@ public class GenerateTestData {
 
             JSONArray placesList = jo.getJSONArray("geonames");
             Log.i(TAG, String.valueOf(placesList.length()));
-            int numMarkersToMake = 10;
+            int numMarkersToMake = 20;
             for (int i = 0; i < placesList.length(); i++) {
                 JSONObject object = placesList.getJSONObject(i);
 
