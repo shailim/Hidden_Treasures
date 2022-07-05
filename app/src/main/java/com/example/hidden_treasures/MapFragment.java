@@ -62,6 +62,7 @@ import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.parse.FindCallback;
+import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
@@ -92,7 +93,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private Location createdMarkerLocation;
     private String createdMarkerMediaUrl;
 
-    private List<ParseMarker> markers = new ArrayList<>();
+    private List<String> markerIDs = new ArrayList<>();
 
     private GoogleMap map;
 
@@ -175,8 +176,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // initial position should show where the user was previously looking
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(prevLatitude, prevLongitude), zoomLevel));
 
+        ParseGeoPoint southwestBound = new ParseGeoPoint(prevLatitude - 5, prevLongitude - 5);
+        ParseGeoPoint northeastBound = new ParseGeoPoint(prevLatitude + 5, prevLongitude + 5);
         //get markers from database and place on map
-        getMarkers();
+        getMarkers(50, southwestBound, northeastBound);
         // enables any markers on the map to be clickable
         enableMarkerClicks();
         // keep track of camera position on map
@@ -184,18 +187,24 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     /* retrieves markers from database, then calls a function to place markers on map */
-    private void getMarkers() {
+    private void getMarkers(int numMarkersToGet, ParseGeoPoint southwestBound, ParseGeoPoint northeastBound) {
         ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
-        markerQuery.setLimit(2000);
+        markerQuery.setLimit(numMarkersToGet);
+        // restricting markers to a rectangular bounding box
+        markerQuery.whereWithinGeoBox("location", southwestBound, northeastBound);
+        // not getting repeated markers
+        markerQuery.whereNotContainedIn("objectId", markerIDs);
         markerQuery.findInBackground(new FindCallback<ParseMarker>() {
             @Override
             public void done(List<ParseMarker> objects, ParseException e) {
                 if (e == null) {
-                    markers.addAll(objects);
+                    for (ParseMarker marker : objects) {
+                        markerIDs.add(marker.getObjectId());
+                    }
+                    Log.i(TAG, String.valueOf(markerIDs.size()));
                     Log.i(TAG, "got the markers");
-                    Log.i(TAG, String.valueOf(objects.size()));
                     // call function to place markers on map
-                    placeMarkersOnMap();
+                    placeMarkersOnMap(objects);
                 } else {
                     Log.i(TAG, "Couldn't get markers");
                 }
@@ -204,7 +213,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     /* Creates new markers and places them on the map */
-    private void placeMarkersOnMap() {
+    private void placeMarkersOnMap(List<ParseMarker> markers) {
         if (markers != null && markers.size() > 0) {
             int id = 1;
             for (ParseMarker marker : markers) {
@@ -293,8 +302,65 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public void onCameraIdle() {
                 Log.i(TAG, "camera is idle");
+                // get coordinates and zoom level of current camera position
+                double latitude = map.getCameraPosition().target.latitude;
+                double longitude = map.getCameraPosition().target.longitude;
+                map.getProjection().getVisibleRegion();
+                float zoomLevel = map.getCameraPosition().zoom;
+                // calculate bounds to get more markers
+                getRadius(latitude, longitude, zoomLevel);
             }
         });
+
+
+    }
+
+    /* Calculates the bounds in which to get the next markers
+     * Based on the camera position and zoom level */
+    public void getRadius(double latitude, double longitude, float zoomLevel) {
+        int numMarkersToGet;
+        double southwestLat, southwestLong, northeastLat, northeastLong;
+
+        if (zoomLevel < 5) {
+            numMarkersToGet = 100;
+            southwestLat = latitude - 10;
+            southwestLong = longitude - 10;
+            northeastLat = latitude + 10;
+            northeastLong = longitude + 10;
+
+        } else if (zoomLevel < 9) {
+            numMarkersToGet = 50;
+            southwestLat = latitude - 7;
+            southwestLong = longitude - 7;
+            northeastLat = latitude + 7;
+            northeastLong = longitude + 7;
+
+        } else if (zoomLevel < 12) {
+            numMarkersToGet = 25;
+            southwestLat = latitude - 5;
+            southwestLong = longitude - 5;
+            northeastLat = latitude + 5;
+            northeastLong = longitude + 5;
+
+        } else if (zoomLevel < 16) {
+            numMarkersToGet = 10;
+            southwestLat = latitude - 3;
+            southwestLong = longitude - 3;
+            northeastLat = latitude + 3;
+            northeastLong = longitude + 3;
+
+        } else {
+            numMarkersToGet = 5;
+            southwestLat = latitude - 2;
+            southwestLong = longitude - 2;
+            northeastLat = latitude + 2;
+            northeastLong = longitude + 2;
+        }
+        // create the two points needed for the rectangular bound
+        ParseGeoPoint southwestBound = new ParseGeoPoint(southwestLat, southwestLong);
+        ParseGeoPoint northeastBound = new ParseGeoPoint(northeastLat, northeastLong);
+        // get more markers within the bounds
+        getMarkers(numMarkersToGet, southwestBound, northeastBound);
     }
 
     /* Uses Google's Places API to display place name for autocomplete searching */

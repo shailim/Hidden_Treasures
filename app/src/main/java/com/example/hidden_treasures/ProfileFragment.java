@@ -8,12 +8,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-
 public class ProfileFragment extends Fragment {
 
     public ProfileFragment() {
         // Required empty public constructor
     }
+
     public static ProfileFragment newInstance() {
         ProfileFragment fragment = new ProfileFragment();
         return fragment;

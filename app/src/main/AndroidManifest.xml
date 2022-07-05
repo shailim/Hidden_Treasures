@@ -33,15 +33,6 @@
         android:theme="@style/Theme.Hidden_Treasures"
         tools:targetApi="31">
         <activity
-            android:name=".CollectionActivity"
-            android:exported="false" />
-        <activity
-            android:name=".SignUpActivity"
-            android:exported="false" />
-        <activity
-            android:name=".LoginActivity"
-            android:exported="false" />
-        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
