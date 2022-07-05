@@ -61,6 +61,11 @@ import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
+import com.google.maps.android.clustering.Cluster;
+import com.google.maps.android.clustering.ClusterItem;
+import com.google.maps.android.clustering.ClusterManager;
+import com.google.maps.android.clustering.view.ClusterRenderer;
+import com.google.maps.android.clustering.view.DefaultClusterRenderer;
 import com.parse.FindCallback;
 import com.parse.Parse;
 import com.parse.ParseException;
@@ -76,6 +81,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
@@ -94,6 +100,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private String createdMarkerMediaUrl;
 
     private List<String> markerIDs = new ArrayList<>();
+    private ClusterManager<MarkerItem> clusterManager;
 
     private GoogleMap map;
 
@@ -173,6 +180,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         map.setMapStyle(new MapStyleOptions(getResources()
                 .getString(R.string.map_style_json)));
         Log.i(TAG, "showing map");
+        // initialize the cluster manager
+        clusterManager = new ClusterManager<MarkerItem>(getContext(), map);
+        map.setOnCameraIdleListener(clusterManager);
+        map.setOnMarkerClickListener(clusterManager);
+        clusterManager.setAnimation(false);
         // initial position should show where the user was previously looking
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(prevLatitude, prevLongitude), zoomLevel));
 
@@ -221,33 +233,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 LatLng userLocation = new LatLng(marker.getLocation().getLatitude(), marker.getLocation().getLongitude());
                 String title = marker.getTitle();
                 ParseFile media = marker.getMedia();
-                Bitmap image = null;
-                try {
-                    image = BitmapFactory.decodeFile(media.getFile().getAbsolutePath());
-                    // change height and width as zoom level changes
-                    int height;
-                    int width;
-                    // resize image for marker icon
-                    image = Bitmap.createScaledBitmap(image, 50, 50, false);
-                    // Create a circular bitmap
-                    image = getCircularBitmap(image);
-                    // Add a border around circular bitmap
-                    image = addBorderToCircularBitmap(image, 5, Color.WHITE);
-                    // Add a shadow around circular bitmap
-                    image = addShadowToCircularBitmap(image, 4, Color.LTGRAY);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-                //create a new marker object with the values
-                Marker createdMarker = map.addMarker(new MarkerOptions()
-                        .position(userLocation)
-                        .title(title)
-                        .icon(BitmapDescriptorFactory.fromBitmap(image)));
                 // set the tag as the image url
                 String url = "https://picsum.photos/id/" + id + "/200/300";
-                createdMarker.setTag(url);
+                //createdMarker.setTag(url);
+                MarkerItem newMarker = new MarkerItem(userLocation.latitude, userLocation.longitude, title, url);
+                clusterManager.addItem(newMarker);
                 id++;
             }
+            clusterManager.cluster();
             Log.i(TAG, "placed markers on map");
             // .icon(BitmapDescriptorFactory.fromBitmap(image))
         }
@@ -255,29 +248,24 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public void addCreatedMarker(String title, Location location, String imageUrl) {
         if (title != null) {
-            //LatLng userLocation = new LatLng(location.getLatitude(), location.getLongitude());
-            LatLng userLocation = new LatLng(48.8566, 2.3522);
-            Marker createdMarker = map.addMarker(new MarkerOptions()
-                    .position(userLocation)
-                    .title(title));
-            // set the tag as the image url
-            createdMarker.setTag(imageUrl);
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(userLocation, zoomLevel));
+            MarkerItem newMarker = new MarkerItem(location.getLatitude(), location.getLongitude(), title, imageUrl);
+            clusterManager.addItem(newMarker);
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(48.8566, 2.3522), zoomLevel));
         }
     }
 
     /* Adds a click listener on markers
      * On marker click, a marker detail view opens up  */
     public void enableMarkerClicks() {
-        map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+        clusterManager.setOnClusterItemClickListener(new ClusterManager.OnClusterItemClickListener<MarkerItem>() {
             @Override
-            public boolean onMarkerClick(@NonNull Marker marker) {
+            public boolean onClusterItemClick(MarkerItem item) {
                 // to set marker detail as a child fragment
                 FragmentManager childFragMan = getChildFragmentManager();
                 FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
                 // create a new marker detail fragment instance and pass in image url, place name, description
-                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance((String) marker.getTag(), marker.getTitle());
+                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance((String) item.getTag(), item.getTitle());
                 // add the child fragment to current map fragment
                 childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
                 childFragTrans.addToBackStack(null);
@@ -302,13 +290,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public void onCameraIdle() {
                 Log.i(TAG, "camera is idle");
-                // get coordinates and zoom level of current camera position
-                double latitude = map.getCameraPosition().target.latitude;
-                double longitude = map.getCameraPosition().target.longitude;
+                // get coordinates and zoom level of current screen bounds
+                LatLng southwest = map.getProjection().getVisibleRegion().latLngBounds.southwest;
+                LatLng northeast = map.getProjection().getVisibleRegion().latLngBounds.northeast;
                 map.getProjection().getVisibleRegion();
                 float zoomLevel = map.getCameraPosition().zoom;
                 // calculate bounds to get more markers
-                getRadius(latitude, longitude, zoomLevel);
+                getRadius(southwest, northeast, zoomLevel);
             }
         });
 
@@ -317,44 +305,45 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     /* Calculates the bounds in which to get the next markers
      * Based on the camera position and zoom level */
-    public void getRadius(double latitude, double longitude, float zoomLevel) {
+    public void getRadius(LatLng southwest, LatLng northeast, float zoomLevel) {
         int numMarkersToGet;
-        double southwestLat, southwestLong, northeastLat, northeastLong;
+        double southwestLat = southwest.latitude, southwestLong = southwest.longitude, northeastLat = northeast.latitude, northeastLong = northeast.longitude;
+
 
         if (zoomLevel < 5) {
-            numMarkersToGet = 100;
-            southwestLat = latitude - 10;
-            southwestLong = longitude - 10;
-            northeastLat = latitude + 10;
-            northeastLong = longitude + 10;
+            numMarkersToGet = 50;
+            southwestLat = southwestLat - 5;
+            southwestLong = southwestLong - 5;
+            northeastLat = northeastLat + 5;
+            northeastLong = northeastLong + 5;
 
         } else if (zoomLevel < 9) {
-            numMarkersToGet = 50;
-            southwestLat = latitude - 7;
-            southwestLong = longitude - 7;
-            northeastLat = latitude + 7;
-            northeastLong = longitude + 7;
+            numMarkersToGet = 40;
+            southwestLat = southwestLat - 4;
+            southwestLong = southwestLong - 4;
+            northeastLat = northeastLat + 4;
+            northeastLong = northeastLong + 4;
 
         } else if (zoomLevel < 12) {
-            numMarkersToGet = 25;
-            southwestLat = latitude - 5;
-            southwestLong = longitude - 5;
-            northeastLat = latitude + 5;
-            northeastLong = longitude + 5;
+            numMarkersToGet = 30;
+            southwestLat = southwestLat - 3;
+            southwestLong = southwestLong - 3;
+            northeastLat = northeastLat + 3;
+            northeastLong = northeastLong + 3;
 
         } else if (zoomLevel < 16) {
-            numMarkersToGet = 10;
-            southwestLat = latitude - 3;
-            southwestLong = longitude - 3;
-            northeastLat = latitude + 3;
-            northeastLong = longitude + 3;
+            numMarkersToGet = 20;
+            southwestLat = southwestLat - 2;
+            southwestLong = southwestLong - 2;
+            northeastLat = northeastLat + 2;
+            northeastLong = northeastLong + 2;
 
         } else {
-            numMarkersToGet = 5;
-            southwestLat = latitude - 2;
-            southwestLong = longitude - 2;
-            northeastLat = latitude + 2;
-            northeastLong = longitude + 2;
+            numMarkersToGet = 10;
+            southwestLat = southwestLat - 1;
+            southwestLong = southwestLong - 1;
+            northeastLat = northeastLat + 1;
+            northeastLong = northeastLong + 1;
         }
         // create the two points needed for the rectangular bound
         ParseGeoPoint southwestBound = new ParseGeoPoint(southwestLat, southwestLong);
