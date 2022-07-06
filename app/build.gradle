@@ -68,4 +68,6 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
     implementation 'com.googlecode.json-simple:json-simple:1.1.1'
     implementation 'com.google.maps.android:android-maps-utils:2.3.0'
+    implementation 'com.roger.catloadinglibrary:catloadinglibrary:1.0.9'
+    implementation 'com.github.d-max:spots-dialog:1.1@aar'
 }

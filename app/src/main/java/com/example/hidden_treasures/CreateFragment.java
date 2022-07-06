@@ -4,6 +4,7 @@ import static androidx.core.content.FileProvider.getUriForFile;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -53,6 +54,7 @@ import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
 import com.parse.SaveCallback;
+import com.roger.catloadinglibrary.CatLoadingView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -61,12 +63,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import dmax.dialog.SpotsDialog;
+
 public class CreateFragment extends Fragment {
 
     private static final String TAG = "CreateFragment";
 
     public static String BITMAP_IMAGE = "takenImage";
     public static String PHOTO_FILE = "photoFile";
+
+    private CatLoadingView mCatProgressView;
 
     private File photoFile;
     private Bitmap takenImage;
@@ -127,6 +133,8 @@ public class CreateFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        mCatProgressView = new CatLoadingView();
 
         // don't show nav bar here
         getActivity().findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
@@ -208,6 +216,12 @@ public class CreateFragment extends Fragment {
         btnSubmitMarker.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mCatProgressView.show(getActivity().getSupportFragmentManager(), "");
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
 
                 // don't save marker is there's no title or picture/video
                 if (etTitle.getText() == null || etTitle.getText().toString().isEmpty()) {
@@ -236,6 +250,7 @@ public class CreateFragment extends Fragment {
                                 ft.remove(CreateFragment.this);
                                 ft.commit();
 
+                                mCatProgressView.dismiss();
                                 // go to map fragment
                                 MainActivity main = (MainActivity) getActivity();
                                 main.showNewMarker(currentLocation, parseMarker);

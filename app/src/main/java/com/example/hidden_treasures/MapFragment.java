@@ -250,6 +250,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if (title != null) {
             MarkerItem newMarker = new MarkerItem(location.getLatitude(), location.getLongitude(), title, imageUrl);
             clusterManager.addItem(newMarker);
+            Log.i(TAG, "moving camera to new marker");
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(48.8566, 2.3522), zoomLevel));
         }
     }
