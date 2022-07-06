@@ -16,6 +16,9 @@
     <string name="aws_access_key_id">AKIAQ4ZFDTTK3ELL3MXT</string>
     <string name="aws_secret_access_key">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</string>
     <string name="bucket_name">hidden-treasures-media</string>
+    <string name="create_account_text">Create Account</string>
+    <string name="login_btn_text">Log In</string>
+    <string name="signup_btn_text">Sign Up</string>
     <string name="map_style_json">[
       {
     \"elementType\": \"geometry\",
