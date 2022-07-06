@@ -234,10 +234,11 @@ public class CreateFragment extends Fragment {
                                 // remove this fragment
                                 FragmentTransaction ft = getParentFragmentManager().beginTransaction();
                                 ft.remove(CreateFragment.this);
+                                ft.commit();
 
                                 // go to map fragment
                                 MainActivity main = (MainActivity) getActivity();
-                                main.switchTab(R.id.action_map, title, currentLocation, file.getUrl());
+                                main.showNewMarker(currentLocation, parseMarker);
                             } else {
                                 Log.e(TAG, "unable to save marker");
                                 Log.i(TAG, e.getMessage());

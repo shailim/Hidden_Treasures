@@ -91,6 +91,8 @@ public class CameraFragment extends Fragment {
             @Override
             public void onClick(View v) {
 
+                Log.i(TAG, "clicked on camera button");
+
                 // getting a file reference
                 photoFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "share_image_" + System.currentTimeMillis() + ".png");
 
@@ -99,6 +101,8 @@ public class CameraFragment extends Fragment {
 
                 // launch intent to open camera
                 cameraLauncher.launch(fileProvider);
+
+                Log.i(TAG, "launched camera");
             }
         });
     }

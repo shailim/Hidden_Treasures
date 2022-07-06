@@ -91,4 +91,10 @@ public class ProfileFragment extends Fragment {
             }
         });
     }
+
+    public void addItemToMarkers(ParseMarker marker) {
+        // add the new created marker in the beginning
+        markers.add(0, marker);
+        adapter.notifyItemInserted(0);
+    }
 }

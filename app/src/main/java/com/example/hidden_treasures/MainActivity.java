@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
                     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                         switch (item.getItemId()) {
                             case R.id.action_create:
-                                displayCreateFragment();
+                                displayCameraFragment();
                                 break;
                             case R.id.action_profile:
                                 displayProfileFragment();
@@ -77,18 +77,26 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    public void switchTab(int id, String title, Location location, String imageUrl) {
+    public void showNewMarker(Location location, ParseMarker marker) {
         //set navbar to visible again
         bottomNavigationView.setVisibility(View.VISIBLE);
         //set selected tab to map
-        bottomNavigationView.setSelectedItemId(id);
-        displayMapFragment(title, location, imageUrl);
+        bottomNavigationView.setSelectedItemId(R.id.action_map);
+
+        displayMapFragment(marker.getTitle(), location, marker.getMedia().getUrl());
         handleBottomNavSelection();
+
+        // update user's profile with new marker
+        profileFragment.addItemToMarkers(marker);
     }
 
     /* shows map fragment and hides the other fragments */
     public void displayMapFragment() {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft.setCustomAnimations(
+                R.anim.slide_in,  // enter
+                R.anim.fade_out  // exit
+        );
         if (mapFragment.isAdded()) { // if the fragment is already in container
             ft.show(mapFragment);
         } else { // fragment needs to be added to frame container
@@ -105,6 +113,10 @@ public class MainActivity extends AppCompatActivity {
     /* shows map fragment and hides the other fragments */
     public void displayMapFragment(String title, Location location, String imageUrl) {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft.setCustomAnimations(
+                R.anim.slide_in,  // enter
+                R.anim.fade_out  // exit
+        );
         if (mapFragment.isAdded()) { // if the fragment is already in container
             ft.show(mapFragment);
         } else { // fragment needs to be added to frame container
@@ -112,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
         }
         mapFragment.addCreatedMarker(title, location, imageUrl);
         // Hide create fragment
-        if (cameraFragment.isAdded()) { ft.remove(cameraFragment); }
+        if (cameraFragment.isAdded()) { ft.hide(cameraFragment); }
         // Hide profile fragment
         if (profileFragment.isAdded()) { ft.hide(profileFragment); }
         // Commit changes
@@ -120,12 +132,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /* shows create fragment and hides the other fragments */
-    public void displayCreateFragment() {
+    public void displayCameraFragment() {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft.setCustomAnimations(
+                R.anim.slide_in,  // enter
+                R.anim.fade_out  // exit
+        );
         if (cameraFragment.isAdded()) { // if the fragment is already in container
             ft.remove(cameraFragment);
-            //cameraFragment = CameraFragment.newInstance();
-            ft.add(R.id.fragmentContainer, CameraFragment.newInstance());
+            cameraFragment = CameraFragment.newInstance();
+            ft.add(R.id.fragmentContainer, cameraFragment);
             //ft.show(cameraFragment);
         } else { // fragment needs to be added to frame container
             ft.add(R.id.fragmentContainer, cameraFragment);
@@ -141,6 +157,10 @@ public class MainActivity extends AppCompatActivity {
     /* shows profile fragment and hides the other fragments */
     public void displayProfileFragment() {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft.setCustomAnimations(
+                R.anim.slide_in,  // enter
+                R.anim.fade_out  // exit
+        );
         if (profileFragment.isAdded()) { // if the fragment is already in container
             ft.show(profileFragment);
         } else { // fragment needs to be added to frame container
@@ -149,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
         // Hide map fragment
         if (mapFragment.isAdded()) { ft.hide(mapFragment); }
         // Hide create fragment
-        if (cameraFragment.isAdded()) { ft.remove(cameraFragment); }
+        if (cameraFragment.isAdded()) { ft.hide(cameraFragment); }
         // Commit changes
         ft.commit();
     }
