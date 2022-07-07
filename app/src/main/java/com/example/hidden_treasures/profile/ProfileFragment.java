@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.login.LoginActivity;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
@@ -22,6 +23,9 @@ import com.parse.FindCallback;
 import com.parse.ParseException;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,6 +81,21 @@ public class ProfileFragment extends Fragment {
         gridView.setLayoutManager(new GridLayoutManager(getContext(), 3));
     }
 
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // register to the event bus
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onStop() {
+        // unregister from the event bus
+        EventBus.getDefault().unregister(this);
+        super.onStop();
+    }
+
     /* Retrieves all the markers the user created in descending chronological order */
     public void queryMarkers() {
         ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
@@ -95,10 +114,11 @@ public class ProfileFragment extends Fragment {
         });
     }
 
-    /* To individually add a marker to the marker list whenever the user creates a new one  */
-    public void addItemToMarkers(ParseMarker marker) {
-        // add the new created marker in the beginning
-        markers.add(0, marker);
+    /* subscribe for event when user creates a new marker */
+    @Subscribe
+    public void onNewMarkerEvent(NewMarkerEvent event) {
+        markers.add(0, event.marker);
         adapter.notifyItemInserted(0);
+        Log.i(TAG, "added new marker to list in profile");
     }
 }

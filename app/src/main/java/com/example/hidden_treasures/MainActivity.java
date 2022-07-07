@@ -79,10 +79,6 @@ public class MainActivity extends AppCompatActivity {
         // TODO: find a better way to show new marker on map
         displayMapFragment(marker.getTitle(), location, marker.getMedia().getUrl());
         handleBottomNavSelection();
-
-        // TODO: find a better way update profile's marker list?
-        // update user's profile with new marker
-        profileFragment.addItemToMarkers(marker);
     }
 
     /* shows map fragment and hides the other fragments */

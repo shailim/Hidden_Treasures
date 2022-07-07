@@ -39,6 +39,8 @@ import com.parse.ParseGeoPoint;
 import com.parse.SaveCallback;
 import com.roger.catloadinglibrary.CatLoadingView;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.io.File;
 
 public class CreateFragment extends Fragment {
@@ -238,6 +240,9 @@ public class CreateFragment extends Fragment {
 
                     // remove progress bar
                     mCatProgressView.dismiss();
+
+                    // posting new marker event
+                    EventBus.getDefault().post(new NewMarkerEvent(parseMarker));
 
                     // go to map fragment to show new marker on map
                     MainActivity main = (MainActivity) getActivity();

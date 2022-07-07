@@ -7,15 +7,8 @@
     <string name="menu_title_map">Map</string>
     <string name="menu_title_create">Create</string>
     <string name="menu_title_profile">Profile</string>
-    <string name="submit_marker">Mark It</string>
     <string name="title_hint">Enter a title…</string>
-    <string name="description_hint">Optional description…</string>
-    <string name="take_picture">Take a Photo</string>
-    <string name="take_video">Record a Video</string>
     <string name="fileprovider_authority">"com.example.hidden_treasures.fileprovider"</string>
-    <string name="aws_access_key_id">AKIAQ4ZFDTTK3ELL3MXT</string>
-    <string name="aws_secret_access_key">3mTYEHROslK+Ek21ODEuuN9xdRJ2Ap6aCuLt42qr</string>
-    <string name="bucket_name">hidden-treasures-media</string>
     <string name="create_account_text">Create Account</string>
     <string name="login_btn_text">Log In</string>
     <string name="signup_btn_text">Sign Up</string>
@@ -296,5 +289,4 @@
   }
 ]</string>
     <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

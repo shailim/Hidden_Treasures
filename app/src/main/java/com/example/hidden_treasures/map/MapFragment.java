@@ -115,11 +115,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         map.setOnMarkerClickListener(clusterManager);
         clusterManager.setAnimation(false);
         // set initial position of map
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, 122.1817), 10));
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 10));
 
         /* To get initial markers */
-        ParseGeoPoint southwestBound = new ParseGeoPoint(37.4530 - 5, 122.1817 - 5);
-        ParseGeoPoint northeastBound = new ParseGeoPoint(37.4530 + 5, 122.1817 + 5);
+        ParseGeoPoint southwestBound = new ParseGeoPoint(37.4530 - 5, -122.1817 - 5);
+        ParseGeoPoint northeastBound = new ParseGeoPoint(37.4530 + 5, -122.1817 + 5);
         //get markers from database and place on map
         getMarkers(50, southwestBound, northeastBound);
 
