@@ -1,15 +1,9 @@
-package com.example.hidden_treasures;
+package com.example.hidden_treasures.map;
 
-import static com.google.android.gms.maps.model.BitmapDescriptorFactory.fromBitmap;
 import static com.parse.Parse.getApplicationContext;
 
-import android.annotation.SuppressLint;
-import android.app.DownloadManager;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
@@ -20,88 +14,50 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.UiThread;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import android.os.Parcelable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import androidx.appcompat.widget.SearchView;
+
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import android.widget.Toast;
-
+import com.example.hidden_treasures.models.ParseMarker;
+import com.example.hidden_treasures.R;
 import com.google.android.gms.common.api.Status;
-import com.google.android.gms.dynamic.SupportFragmentWrapper;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
-import com.google.maps.android.clustering.Cluster;
-import com.google.maps.android.clustering.ClusterItem;
 import com.google.maps.android.clustering.ClusterManager;
-import com.google.maps.android.clustering.view.ClusterRenderer;
-import com.google.maps.android.clustering.view.DefaultClusterRenderer;
 import com.parse.FindCallback;
-import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
-import com.parse.ParseObject;
 import com.parse.ParseQuery;
-import com.parse.SaveCallback;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public static final String TAG = "MapFragment";
 
-    private static final String PREV_LATITUDE = "prevLatitude";
-    private static final String PREV_LONGITUDE = "prevLogitude";
-    private static final String ZOOM_LEVEL = "prevZoomLevel";
-
-    private double prevLatitude;
-    private double prevLongitude;
-    private float zoomLevel;
-
-    private String createdMarkerTitle;
-    private Location createdMarkerLocation;
-    private String createdMarkerMediaUrl;
-
     private List<String> markerIDs = new ArrayList<>();
     private ClusterManager<MarkerItem> clusterManager;
-
     private GoogleMap map;
 
     public MapFragment() {
@@ -109,37 +65,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public static MapFragment newInstance() {
-        MapFragment fragment = new MapFragment();
-        return fragment;
-    }
-
-    public static MapFragment newInstance(String title, Location location, String mediaUrl) {
-        MapFragment fragment = new MapFragment();
-        Bundle args = new Bundle();
-        args.putString(ParseMarker.TITLE, title);
-        args.putParcelable(ParseMarker.LOCATION, location);
-        args.putString(ParseMarker.MEDIA, mediaUrl);
-        fragment.setArguments(args);
-        return fragment;
+        return new MapFragment();
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            createdMarkerTitle = getArguments().getString(ParseMarker.TITLE);
-            createdMarkerLocation = getArguments().getParcelable(ParseMarker.LOCATION);
-            createdMarkerMediaUrl = getArguments().getString(ParseMarker.MEDIA);
-        }
-        if (savedInstanceState != null) {
-            prevLatitude = savedInstanceState.getDouble(PREV_LATITUDE);
-            prevLongitude = savedInstanceState.getDouble(PREV_LONGITUDE);
-            zoomLevel = savedInstanceState.getFloat(ZOOM_LEVEL);
-        } else {
-            prevLatitude = 37.0902;
-            prevLongitude = -95.7129;
-            zoomLevel = 5;
-        }
     }
 
     @Override
@@ -169,14 +100,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         Log.i(TAG, "on save instance being called");
-        outState.putDouble(PREV_LATITUDE, map.getCameraPosition().target.latitude);
-        outState.putDouble(PREV_LONGITUDE, map.getCameraPosition().target.longitude);
-        outState.putFloat(ZOOM_LEVEL, map.getCameraPosition().zoom);
     }
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.map = googleMap;
+        // set map style
         map.setMapStyle(new MapStyleOptions(getResources()
                 .getString(R.string.map_style_json)));
         Log.i(TAG, "showing map");
@@ -185,17 +114,19 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         map.setOnCameraIdleListener(clusterManager);
         map.setOnMarkerClickListener(clusterManager);
         clusterManager.setAnimation(false);
-        // initial position should show where the user was previously looking
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(prevLatitude, prevLongitude), zoomLevel));
+        // set initial position of map
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, 122.1817), 10));
 
-        ParseGeoPoint southwestBound = new ParseGeoPoint(prevLatitude - 5, prevLongitude - 5);
-        ParseGeoPoint northeastBound = new ParseGeoPoint(prevLatitude + 5, prevLongitude + 5);
+        /* To get initial markers */
+        ParseGeoPoint southwestBound = new ParseGeoPoint(37.4530 - 5, 122.1817 - 5);
+        ParseGeoPoint northeastBound = new ParseGeoPoint(37.4530 + 5, 122.1817 + 5);
         //get markers from database and place on map
         getMarkers(50, southwestBound, northeastBound);
+
         // enables any markers on the map to be clickable
         enableMarkerClicks();
-        // keep track of camera position on map
-        trackCameraPosition();
+        // listen for whenever camera is idle on map
+        watchCameraIdle();
     }
 
     /* retrieves markers from database, then calls a function to place markers on map */
@@ -227,32 +158,34 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     /* Creates new markers and places them on the map */
     private void placeMarkersOnMap(List<ParseMarker> markers) {
         if (markers != null && markers.size() > 0) {
+            // id is used to get random images
             int id = 1;
             for (ParseMarker marker : markers) {
                 // get the marker values
                 LatLng userLocation = new LatLng(marker.getLocation().getLatitude(), marker.getLocation().getLongitude());
                 String title = marker.getTitle();
                 ParseFile media = marker.getMedia();
-                // set the tag as the image url
+
+                // TODO: replace random images with the real media url
+                // generate random images for markers for now for the test data
                 String url = "https://picsum.photos/id/" + id + "/200/300";
-                //createdMarker.setTag(url);
+
+                // create a new marker item and add it to the cluster manager
                 MarkerItem newMarker = new MarkerItem(userLocation.latitude, userLocation.longitude, title, url);
                 clusterManager.addItem(newMarker);
                 id++;
             }
             clusterManager.cluster();
             Log.i(TAG, "placed markers on map");
-            // .icon(BitmapDescriptorFactory.fromBitmap(image))
         }
     }
 
+    /* adds an individual newly created marker to the cluster manager */
     public void addCreatedMarker(String title, Location location, String imageUrl) {
-        if (title != null) {
-            MarkerItem newMarker = new MarkerItem(location.getLatitude(), location.getLongitude(), title, imageUrl);
-            clusterManager.addItem(newMarker);
-            Log.i(TAG, "moving camera to new marker");
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(48.8566, 2.3522), zoomLevel));
-        }
+        MarkerItem newMarker = new MarkerItem(location.getLatitude(), location.getLongitude(), title, imageUrl);
+        clusterManager.addItem(newMarker);
+        Log.i(TAG, "moving camera to new marker");
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(48.8566, 2.3522), 13));
     }
 
     /* Adds a click listener on markers
@@ -265,7 +198,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 FragmentManager childFragMan = getChildFragmentManager();
                 FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
-                // create a new marker detail fragment instance and pass in image url, place name, description
+                // create a new marker detail fragment instance and pass in image url, title
                 MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance((String) item.getTag(), item.getTitle());
                 // add the child fragment to current map fragment
                 childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
@@ -277,16 +210,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
 
-    /* Adds a listener to track camera movement on map */
-    public void trackCameraPosition() {
-        map.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
-            @Override
-            public void onCameraMove() {
-            }
-
-
-        });
-
+    /* Adds a listener to track when camera is idle on map */
+    public void watchCameraIdle() {
         map.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
             @Override
             public void onCameraIdle() {
@@ -308,9 +233,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
      * Based on the camera position and zoom level */
     public void getRadius(LatLng southwest, LatLng northeast, float zoomLevel) {
         int numMarkersToGet;
-        double southwestLat = southwest.latitude, southwestLong = southwest.longitude, northeastLat = northeast.latitude, northeastLong = northeast.longitude;
+        double southwestLat = southwest.latitude, southwestLong = southwest.longitude;
+        double northeastLat = northeast.latitude, northeastLong = northeast.longitude;
 
-
+        // TODO: refactor this method, change the logic
         if (zoomLevel < 5) {
             numMarkersToGet = 50;
             southwestLat = southwestLat - 5;
@@ -357,8 +283,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void setupAutocompleteSearch() {
         // Initialize the Places SDK
         Places.initialize(getApplicationContext(), getString(R.string.maps_api_key));
-        // Create a new PlacesClient instance
-        PlacesClient placesClient = Places.createClient(getContext());
 
         // Initialize the AutocompleteSupportFragment
         AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
@@ -371,29 +295,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(@NonNull Place place) {
-                // create a Geocoder object to get coordinates of place that user searched for
-                Geocoder geocoder = new Geocoder(getContext(), new Locale("en"));
-                try {
-                    List<Address> list = geocoder.getFromLocationName(place.getName(), 1);
-                    if (!list.isEmpty()) {
-                            // get the coordinates of the location
-                            Double latitude = list.get(0).getLatitude();
-                            Double longitude = list.get(0).getLongitude();
-
-                            // move map camera position to the location
-                            // right now, it's on a different thread so have to do it on the UI thread
-                            if (getActivity() != null) {
-                                getActivity().runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), 10));
-                                    }
-                                });
-                            }
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                moveToSearchedLocation(place);
             }
 
             @Override
@@ -403,82 +305,30 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
-    protected Bitmap getCircularBitmap(Bitmap srcBitmap) {
-        // Calculate the circular bitmap width with border
-        int squareBitmapWidth = Math.min(srcBitmap.getWidth(), srcBitmap.getHeight());
-        // Initialize a new instance of Bitmap
-        Bitmap dstBitmap = Bitmap.createBitmap (
-                squareBitmapWidth, // Width
-                squareBitmapWidth, // Height
-                Bitmap.Config.ARGB_8888 // Config
-        );
-        Canvas canvas = new Canvas(dstBitmap);
-        // Initialize a new Paint instance
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);
-        Rect rect = new Rect(0, 0, squareBitmapWidth, squareBitmapWidth);
-        RectF rectF = new RectF(rect);
-        canvas.drawOval(rectF, paint);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-        // Calculate the left and top of copied bitmap
-        float left = (squareBitmapWidth-srcBitmap.getWidth())/2;
-        float top = (squareBitmapWidth-srcBitmap.getHeight())/2;
-        canvas.drawBitmap(srcBitmap, left, top, paint);
-        // Free the native object associated with this bitmap.
-        srcBitmap.recycle();
-        // Return the circular bitmap
-        return dstBitmap;
-    }
-    // Custom method to add a border around circular bitmap
-    protected Bitmap addBorderToCircularBitmap(Bitmap srcBitmap, int borderWidth, int borderColor) {
-        // Calculate the circular bitmap width with border
-        int dstBitmapWidth = srcBitmap.getWidth()+borderWidth*2;
-        // Initialize a new Bitmap to make it bordered circular bitmap
-        Bitmap dstBitmap = Bitmap.createBitmap(dstBitmapWidth,dstBitmapWidth, Bitmap.Config.ARGB_8888);
-        // Initialize a new Canvas instance
-        Canvas canvas = new Canvas(dstBitmap);
-        // Draw source bitmap to canvas
-        canvas.drawBitmap(srcBitmap, borderWidth, borderWidth, null);
-        // Initialize a new Paint instance to draw border
-        Paint paint = new Paint();
-        paint.setColor(borderColor);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(borderWidth);
-        paint.setAntiAlias(true);
-        canvas.drawCircle(
-                canvas.getWidth() / 2, // cx
-                canvas.getWidth() / 2, // cy
-                canvas.getWidth()/2 - borderWidth / 2, // Radius
-                paint // Paint
-        );
-        // Free the native object associated with this bitmap.
-        srcBitmap.recycle();
-        // Return the bordered circular bitmap
-        return dstBitmap;
-    }
-    // Custom method to add a shadow around circular bitmap
-    protected Bitmap addShadowToCircularBitmap(Bitmap srcBitmap, int shadowWidth, int shadowColor){
-        // Calculate the circular bitmap width with shadow
-        int dstBitmapWidth = srcBitmap.getWidth()+shadowWidth*2;
-        Bitmap dstBitmap = Bitmap.createBitmap(dstBitmapWidth,dstBitmapWidth, Bitmap.Config.ARGB_8888);
-        // Initialize a new Canvas instance
-        Canvas canvas = new Canvas(dstBitmap);
-        canvas.drawBitmap(srcBitmap, shadowWidth, shadowWidth, null);
-        // Paint to draw circular bitmap shadow
-        Paint paint = new Paint();
-        paint.setColor(shadowColor);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(shadowWidth);
-        paint.setAntiAlias(true);
-        // Draw the shadow around circular bitmap
-        canvas.drawCircle (
-                dstBitmapWidth / 2, // cx
-                dstBitmapWidth / 2, // cy
-                dstBitmapWidth / 2 - shadowWidth / 2, // Radius
-                paint // Paint
-        );
-        srcBitmap.recycle();
-        return dstBitmap;
+    private void moveToSearchedLocation(@NonNull Place place) {
+        // create a Geocoder object to get coordinates of place that user searched for
+        Geocoder geocoder = new Geocoder(getContext(), new Locale("en"));
+        try {
+            List<Address> list = geocoder.getFromLocationName(place.getName(), 1);
+            if (!list.isEmpty()) {
+                    // get the coordinates of the location
+                    Double latitude = list.get(0).getLatitude();
+                    Double longitude = list.get(0).getLongitude();
+
+                    // move map camera position to the location
+                    // right now, it's on a different thread so have to do it on the UI thread
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), 10));
+                            }
+                        });
+                    }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

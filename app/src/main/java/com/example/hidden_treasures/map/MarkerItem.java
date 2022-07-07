@@ -1,4 +1,4 @@
-package com.example.hidden_treasures;
+package com.example.hidden_treasures.map;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;

@@ -1,4 +1,4 @@
-package com.example.hidden_treasures;
+package com.example.hidden_treasures.profile;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -10,6 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.hidden_treasures.models.ParseMarker;
+import com.example.hidden_treasures.R;
 import com.parse.ParseFile;
 
 import java.util.List;

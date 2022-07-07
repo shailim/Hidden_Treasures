@@ -1,4 +1,4 @@
-package com.example.hidden_treasures;
+package com.example.hidden_treasures.util;
 
 import android.content.Context;
 import android.view.GestureDetector;

@@ -1,4 +1,4 @@
-package com.example.hidden_treasures;
+package com.example.hidden_treasures.login;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.example.hidden_treasures.R;
 import com.parse.ParseException;
 import com.parse.ParseUser;
 import com.parse.SignUpCallback;
@@ -31,12 +32,18 @@ public class SignUpActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.etPassword);
         btnCreateAccount = findViewById(R.id.btnCreateAccount);
 
+        setOnClickListeners();
+    }
+
+    private void setOnClickListeners() {
+        // Create Account button
         btnCreateAccount.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String username = etUsername.getText().toString();
                 String password = etPassword.getText().toString();
 
+                // create a new parse user
                 ParseUser user = new ParseUser();
                 user.setUsername(username);
                 user.setPassword(password);
@@ -47,6 +54,7 @@ public class SignUpActivity extends AppCompatActivity {
                     public void done(ParseException e) {
                         if (e == null) {
                             Toast.makeText(SignUpActivity.this, "Account created!", Toast.LENGTH_SHORT).show();
+                            // redirect to login activity after saving user
                             startActivity(new Intent(SignUpActivity.this, LoginActivity.class));
                         } else {
                             Log.e(TAG, "Unable to create account");

@@ -2,25 +2,25 @@ package com.example.hidden_treasures;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import android.annotation.SuppressLint;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.StrictMode;
-import android.view.ContextMenu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.example.hidden_treasures.createMarker.CameraFragment;
+import com.example.hidden_treasures.map.GenerateTestData;
+import com.example.hidden_treasures.map.MapFragment;
+import com.example.hidden_treasures.models.ParseMarker;
+import com.example.hidden_treasures.profile.ProfileFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
 import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
-
 
     private MapFragment mapFragment;
     private CameraFragment cameraFragment;
@@ -29,18 +29,10 @@ public class MainActivity extends AppCompatActivity {
     // find the bottom navigation view
     public BottomNavigationView bottomNavigationView;
 
-    @SuppressLint("WrongThread")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-//        GenerateTestData testData = new GenerateTestData();
-//        try {
-//            testData.getData(this);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 
@@ -77,15 +69,18 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
+    /* Redirects to map fragment, adds new marker to marker list in profile page */
     public void showNewMarker(Location location, ParseMarker marker) {
         //set navbar to visible again
         bottomNavigationView.setVisibility(View.VISIBLE);
         //set selected tab to map
         bottomNavigationView.setSelectedItemId(R.id.action_map);
 
+        // TODO: find a better way to show new marker on map
         displayMapFragment(marker.getTitle(), location, marker.getMedia().getUrl());
         handleBottomNavSelection();
 
+        // TODO: find a better way update profile's marker list?
         // update user's profile with new marker
         profileFragment.addItemToMarkers(marker);
     }
@@ -110,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
         ft.commit();
     }
 
-    /* shows map fragment and hides the other fragments */
+    /* shows map fragment and hides the other fragments, also displays new marker on map */
     public void displayMapFragment(String title, Location location, String imageUrl) {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         ft.setCustomAnimations(

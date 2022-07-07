@@ -1,4 +1,4 @@
-package com.example.hidden_treasures;
+package com.example.hidden_treasures.login;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -9,6 +9,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.example.hidden_treasures.MainActivity;
+import com.example.hidden_treasures.R;
 import com.parse.LogInCallback;
 import com.parse.ParseException;
 import com.parse.ParseUser;
@@ -27,6 +29,7 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        // if user is already logged in, redirect to main activity
         if (ParseUser.getCurrentUser() != null) {
             startActivity(new Intent(LoginActivity.this, MainActivity.class));
         }
@@ -36,6 +39,14 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         btnSignup = findViewById(R.id.btnSignup);
 
+        // set onClick listeners for buttons
+        setOnClickListeners();
+    }
+
+    /* sets onClick listeners for any buttons */
+    private void setOnClickListeners() {
+
+        // Login button
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -55,9 +66,11 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
+        // Sign Up button
         btnSignup.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // redirect to sign up activity
                 startActivity(new Intent(LoginActivity.this, SignUpActivity.class));
             }
         });

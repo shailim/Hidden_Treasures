@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:layout_margin="20dp"
     android:elevation="2dp"
-    tools:context=".CreateFragment">
+    tools:context=".createMarker.CreateFragment">
 
         <ImageButton
             android:id="@+id/backToCamera"

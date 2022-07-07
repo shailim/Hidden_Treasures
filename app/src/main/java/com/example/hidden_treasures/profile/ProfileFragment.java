@@ -1,4 +1,4 @@
-package com.example.hidden_treasures;
+package com.example.hidden_treasures.profile;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,11 +13,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.example.hidden_treasures.login.LoginActivity;
+import com.example.hidden_treasures.models.ParseMarker;
+import com.example.hidden_treasures.R;
 import com.parse.FindCallback;
-import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
@@ -68,6 +69,7 @@ public class ProfileFragment extends Fragment {
 
         tvUsername.setText(ParseUser.getCurrentUser().getUsername());
 
+        // get the user's created markers
         queryMarkers();
 
         adapter =  new GridAdapter(getContext(), markers);
@@ -75,6 +77,7 @@ public class ProfileFragment extends Fragment {
         gridView.setLayoutManager(new GridLayoutManager(getContext(), 3));
     }
 
+    /* Retrieves all the markers the user created in descending chronological order */
     public void queryMarkers() {
         ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
         query.whereEqualTo("created_by", ParseUser.getCurrentUser());
@@ -92,6 +95,7 @@ public class ProfileFragment extends Fragment {
         });
     }
 
+    /* To individually add a marker to the marker list whenever the user creates a new one  */
     public void addItemToMarkers(ParseMarker marker) {
         // add the new created marker in the beginning
         markers.add(0, marker);

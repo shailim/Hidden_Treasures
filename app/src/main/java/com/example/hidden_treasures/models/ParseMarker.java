@@ -1,4 +1,4 @@
-package com.example.hidden_treasures;
+package com.example.hidden_treasures.models;
 
 import com.parse.ParseClassName;
 import com.parse.ParseFile;

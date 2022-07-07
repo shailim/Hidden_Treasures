@@ -2,6 +2,7 @@ package com.example.hidden_treasures;
 
 import android.app.Application;
 
+import com.example.hidden_treasures.models.ParseMarker;
 import com.parse.Parse;
 import com.parse.ParseObject;
 

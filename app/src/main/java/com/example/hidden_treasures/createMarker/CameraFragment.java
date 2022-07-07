@@ -1,4 +1,4 @@
-package com.example.hidden_treasures;
+package com.example.hidden_treasures.createMarker;
 
 import static androidx.core.content.FileProvider.getUriForFile;
 
@@ -21,8 +21,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageButton;
+
+import com.example.hidden_treasures.R;
 
 import java.io.File;
 
@@ -45,7 +46,7 @@ public class CameraFragment extends Fragment {
                         Bitmap takenImage = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
                         Log.i(TAG, photoFile.getAbsolutePath());
 
-                        // to set marker detail as a child fragment
+                        // to set create fragment as a child fragment
                         FragmentManager childFragMan = getChildFragmentManager();
                         FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
@@ -66,8 +67,7 @@ public class CameraFragment extends Fragment {
     }
 
     public static CameraFragment newInstance() {
-        CameraFragment fragment = new CameraFragment();
-        return fragment;
+        return new CameraFragment();
     }
 
     @Override
