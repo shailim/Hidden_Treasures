@@ -84,6 +84,7 @@ public class ProfileFragment extends Fragment {
         gridView.setAdapter(adapter);
         gridView.setLayoutManager(new GridLayoutManager(getContext(), 3));
 
+        // set onClickListeners for any buttons
         setOnClickListeners();
     }
 
@@ -120,7 +121,9 @@ public class ProfileFragment extends Fragment {
         });
     }
 
+    /* sets onClickListeners for any buttons */
     public void setOnClickListeners() {
+        // Log out button
         logoutBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -129,6 +132,7 @@ public class ProfileFragment extends Fragment {
             }
         });
     }
+
     /* subscribe for event when user creates a new marker */
     @Subscribe
     public void onNewMarkerEvent(NewMarkerEvent event) {

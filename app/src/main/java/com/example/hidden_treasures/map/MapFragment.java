@@ -182,8 +182,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     /* adds an individual newly created marker to the cluster manager */
-    public void addCreatedMarker(String title, Location location, String imageUrl) {
-        MarkerItem newMarker = new MarkerItem(location.getLatitude(), location.getLongitude(), title, imageUrl);
+    public void addCreatedMarker(String title, LatLng location, String imageUrl) {
+        MarkerItem newMarker = new MarkerItem(location.latitude, location.longitude, title, imageUrl);
         clusterManager.addItem(newMarker);
         Log.i(TAG, "moving camera to new marker");
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(48.8566, 2.3522), 13));

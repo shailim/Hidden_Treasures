@@ -244,10 +244,6 @@ public class CreateFragment extends Fragment {
                     // posting new marker event
                     EventBus.getDefault().post(new NewMarkerEvent(parseMarker));
 
-                    // go to map fragment to show new marker on map
-                    MainActivity main = (MainActivity) getActivity();
-                    assert main != null;
-                    main.showNewMarker(currentLocation, parseMarker);
                 } else {
                     Log.e(TAG, "unable to save marker");
                     Log.i(TAG, e.getMessage());

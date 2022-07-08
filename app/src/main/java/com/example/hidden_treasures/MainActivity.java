@@ -7,16 +7,22 @@ import androidx.fragment.app.FragmentTransaction;
 import android.annotation.SuppressLint;
 import android.location.Location;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 
 import com.example.hidden_treasures.createMarker.CameraFragment;
+import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.map.GenerateTestData;
 import com.example.hidden_treasures.map.MapFragment;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.profile.ProfileFragment;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 
 import java.io.IOException;
 
@@ -49,6 +55,20 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setSelectedItemId(R.id.action_map);
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        // register to the event bus
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onStop() {
+        // unregister from the event bus
+        EventBus.getDefault().unregister(this);
+        super.onStop();
+    }
+
     public void handleBottomNavSelection() {
         // handling navigation selection
         bottomNavigationView.setOnItemSelectedListener(
@@ -71,15 +91,16 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    /* Redirects to map fragment, adds new marker to marker list in profile page */
-    public void showNewMarker(Location location, ParseMarker marker) {
+    /* subscribe for event when user creates a new marker */
+    @Subscribe
+    public void onNewMarkerEvent(NewMarkerEvent event) {
         //set navbar to visible again
         bottomNavigationView.setVisibility(View.VISIBLE);
         //set selected tab to map
         bottomNavigationView.setSelectedItemId(R.id.action_map);
 
-        // TODO: find a better way to show new marker on map
-        displayMapFragment(marker.getTitle(), location, marker.getMedia().getUrl());
+        LatLng location = new LatLng(event.marker.getLocation().getLatitude(), event.marker.getLocation().getLongitude());
+        displayMapFragment(event.marker.getTitle(), location, event.marker.getMedia().getUrl());
         handleBottomNavSelection();
     }
 
@@ -104,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /* shows map fragment and hides the other fragments, also displays new marker on map */
-    public void displayMapFragment(String title, Location location, String imageUrl) {
+    public void displayMapFragment(String title, LatLng location, String imageUrl) {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         ft.setCustomAnimations(
                 R.anim.slide_in,  // enter
