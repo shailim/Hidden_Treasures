@@ -2,6 +2,7 @@ package com.example.hidden_treasures.createMarker;
 
 import static androidx.core.content.FileProvider.getUriForFile;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -24,6 +25,8 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 
 import com.example.hidden_treasures.R;
+import com.example.hidden_treasures.login.LoginActivity;
+import com.parse.ParseUser;
 
 import java.io.File;
 
@@ -73,6 +76,10 @@ public class CameraFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // if user is not logged in, redirect to log in page
+        if (ParseUser.getCurrentUser() == null) {
+            startActivity(new Intent(getContext(), LoginActivity.class));
+        }
     }
 
     @Override

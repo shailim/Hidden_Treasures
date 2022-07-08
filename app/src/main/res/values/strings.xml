@@ -13,6 +13,7 @@
     <string name="login_btn_text">Log In</string>
     <string name="signup_btn_text">Sign Up</string>
     <string name="my_markers">My Markers</string>
+    <string name="logout_btn_text">Log Out</string>
     <string name="map_style_json">[
       {
     \"elementType\": \"geometry\",

@@ -13,13 +13,16 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
+import com.example.hidden_treasures.MainActivity;
 import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.login.LoginActivity;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.parse.FindCallback;
+import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
@@ -36,6 +39,7 @@ public class ProfileFragment extends Fragment {
 
     TextView tvUsername;
     RecyclerView gridView;
+    Button logoutBtn;
     List<ParseMarker> markers = new ArrayList<>();
     GridAdapter adapter;
 
@@ -51,16 +55,15 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // if user is not logged in, redirect to log in page
+        if (ParseUser.getCurrentUser() == null) {
+            startActivity(new Intent(getContext(), LoginActivity.class));
+        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
-        // if user is not logged in, redirect to log in page
-        if (ParseUser.getCurrentUser() == null) {
-            startActivity(new Intent(getContext(), LoginActivity.class));
-        }
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_profile, container, false);
     }
@@ -70,6 +73,7 @@ public class ProfileFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         tvUsername = view.findViewById(R.id.tvUsername);
         gridView = view.findViewById(R.id.gridView);
+        logoutBtn = view.findViewById(R.id.logoutBtn);
 
         tvUsername.setText(ParseUser.getCurrentUser().getUsername());
 
@@ -79,6 +83,8 @@ public class ProfileFragment extends Fragment {
         adapter =  new GridAdapter(getContext(), markers);
         gridView.setAdapter(adapter);
         gridView.setLayoutManager(new GridLayoutManager(getContext(), 3));
+
+        setOnClickListeners();
     }
 
 
@@ -114,6 +120,15 @@ public class ProfileFragment extends Fragment {
         });
     }
 
+    public void setOnClickListeners() {
+        logoutBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // TODO: redirect to map
+                ParseUser.logOut();
+            }
+        });
+    }
     /* subscribe for event when user creates a new marker */
     @Subscribe
     public void onNewMarkerEvent(NewMarkerEvent event) {

@@ -67,7 +67,7 @@ public class GenerateTestData {
                 double longitude = object.getDouble("lng");
 
                 // create the geoPoint object
-                ParseGeoPoint geoPoint = new ParseGeoPoint(latitude, longitude);
+                ParseGeoPoint geoPoint = new ParseGeoPoint(latitude+3, longitude+3);
 
                 // get the place name for title
                 String title = object.getString("toponymName");
@@ -98,7 +98,7 @@ public class GenerateTestData {
         JSONParser jsonParser = new JSONParser();
         JSONArray placesList = null;
 
-        try (InputStreamReader reader = new InputStreamReader(c.getAssets().open("searchJSON.json"))) {
+        try (InputStreamReader reader = new InputStreamReader(c.getAssets().open("california1.json"))) {
             String obj = jsonParser.parse(reader).toString();
             JSONObject jo = new JSONObject(obj);
 

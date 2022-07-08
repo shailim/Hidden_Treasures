@@ -40,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
             mapFragment = MapFragment.newInstance();
             cameraFragment = CameraFragment.newInstance();
             profileFragment = ProfileFragment.newInstance();
+        } else {
+
         }
 
         handleBottomNavSelection();

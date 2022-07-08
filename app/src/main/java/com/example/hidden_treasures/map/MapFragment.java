@@ -108,6 +108,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // set map style
         map.setMapStyle(new MapStyleOptions(getResources()
                 .getString(R.string.map_style_json)));
+        map.setMinZoomPreference(9);
         Log.i(TAG, "showing map");
         // initialize the cluster manager
         clusterManager = new ClusterManager<MarkerItem>(getContext(), map);
@@ -237,40 +238,33 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         double northeastLat = northeast.latitude, northeastLong = northeast.longitude;
 
         // TODO: refactor this method, change the logic
-        if (zoomLevel < 5) {
-            numMarkersToGet = 50;
-            southwestLat = southwestLat - 5;
-            southwestLong = southwestLong - 5;
-            northeastLat = northeastLat + 5;
-            northeastLong = northeastLong + 5;
+        if (zoomLevel < 11 ) {
+            // get only 10 and scatter them around
+            numMarkersToGet = 1000;
 
-        } else if (zoomLevel < 9) {
-            numMarkersToGet = 40;
-            southwestLat = southwestLat - 4;
-            southwestLong = southwestLong - 4;
-            northeastLat = northeastLat + 4;
-            northeastLong = northeastLong + 4;
-
-        } else if (zoomLevel < 12) {
-            numMarkersToGet = 30;
-            southwestLat = southwestLat - 3;
-            southwestLong = southwestLong - 3;
-            northeastLat = northeastLat + 3;
-            northeastLong = northeastLong + 3;
-
-        } else if (zoomLevel < 16) {
-            numMarkersToGet = 20;
+        } else if (zoomLevel < 13) {
+            // get 20 and scatter them around
+            numMarkersToGet = 1000;
+            // get extra
             southwestLat = southwestLat - 2;
             southwestLong = southwestLong - 2;
             northeastLat = northeastLat + 2;
             northeastLong = northeastLong + 2;
 
+        } else if (zoomLevel < 15) {
+            // get all markers, max 1000
+            numMarkersToGet = 1000;
+            southwestLat = southwestLat - 3;
+            southwestLong = southwestLong - 3;
+            northeastLat = northeastLat + 3;
+            northeastLong = northeastLong + 3;
+
         } else {
-            numMarkersToGet = 10;
-            southwestLat = southwestLat - 1;
-            southwestLong = southwestLong - 1;
-            northeastLat = northeastLat + 1;
-            northeastLong = northeastLong + 1;
+            numMarkersToGet = 1000;
+            southwestLat = southwestLat - 5;
+            southwestLong = southwestLong - 5;
+            northeastLat = northeastLat + 5;
+            northeastLong = northeastLong + 5;
         }
         // create the two points needed for the rectangular bound
         ParseGeoPoint southwestBound = new ParseGeoPoint(southwestLat, southwestLong);
