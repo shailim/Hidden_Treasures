@@ -15,6 +15,7 @@ import android.location.Location;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import android.util.Log;
@@ -24,6 +25,7 @@ import android.view.ViewGroup;
 
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
@@ -49,8 +51,12 @@ import com.parse.ParseQuery;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
@@ -59,6 +65,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private List<String> markerIDs = new ArrayList<>();
     private ClusterManager<MarkerItem> clusterManager;
     private GoogleMap map;
+
+    private LatLng lastExploredLocation = null;
+    private ParseGeoPoint southwestBound = null;
+    private ParseGeoPoint northeastBound = null;
+    private float lastZoomLevel = 0;
 
     public MapFragment() {
         // Required empty public constructor
@@ -71,6 +82,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (savedInstanceState != null) {
+            Log.i(TAG, "getting saved values");
+            // get values from last query for markers
+            lastExploredLocation = savedInstanceState.getParcelable("lastExploredLocation");
+            southwestBound = savedInstanceState.getParcelable("southwestBound");
+            northeastBound = savedInstanceState.getParcelable("northeastBound");
+            lastZoomLevel = savedInstanceState.getFloat("lastZoomLevel");
+        }
     }
 
     @Override
@@ -98,8 +117,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
         Log.i(TAG, "on save instance being called");
+        // save values for the last query for markers
+        outState.putParcelable("lastExploredLocation", lastExploredLocation);
+        outState.putParcelable("southwestBound", southwestBound);
+        outState.putParcelable("northeastBound", northeastBound);
+        outState.putFloat("lastZoomLevel", lastZoomLevel);
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -115,14 +139,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         map.setOnCameraIdleListener(clusterManager);
         map.setOnMarkerClickListener(clusterManager);
         clusterManager.setAnimation(false);
-        // set initial position of map
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 10));
-
-        /* To get initial markers */
-        ParseGeoPoint southwestBound = new ParseGeoPoint(37.4530 - 5, -122.1817 - 5);
-        ParseGeoPoint northeastBound = new ParseGeoPoint(37.4530 + 5, -122.1817 + 5);
-        //get markers from database and place on map
-        getMarkers(50, southwestBound, northeastBound);
+        // if previous state was restored
+        if (lastExploredLocation != null) {
+            // go to last looked at location and get those markers again
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(lastExploredLocation, lastZoomLevel));
+            getMarkers(50, southwestBound, northeastBound);
+        } else {
+            // set initial position of map
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 10));
+            /* To get initial markers */
+            ParseGeoPoint southwestBound = new ParseGeoPoint(37.4530 - 5, -122.1817 - 5);
+            ParseGeoPoint northeastBound = new ParseGeoPoint(37.4530 + 5, -122.1817 + 5);
+            //get markers from database and place on map
+            getMarkers(50, southwestBound, northeastBound);
+        }
 
         // enables any markers on the map to be clickable
         enableMarkerClicks();
@@ -132,6 +162,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     /* retrieves markers from database, then calls a function to place markers on map */
     private void getMarkers(int numMarkersToGet, ParseGeoPoint southwestBound, ParseGeoPoint northeastBound) {
+        this.southwestBound = southwestBound;
+        this.northeastBound = northeastBound;
         ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
         markerQuery.setLimit(numMarkersToGet);
         // restricting markers to a rectangular bounding box
@@ -217,6 +249,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public void onCameraIdle() {
                 Log.i(TAG, "camera is idle");
+                lastExploredLocation = map.getCameraPosition().target;
+                lastZoomLevel = map.getCameraPosition().zoom;
                 // get coordinates and zoom level of current screen bounds
                 LatLng southwest = map.getProjection().getVisibleRegion().latLngBounds.southwest;
                 LatLng northeast = map.getProjection().getVisibleRegion().latLngBounds.northeast;

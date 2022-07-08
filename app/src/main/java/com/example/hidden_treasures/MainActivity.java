@@ -2,11 +2,13 @@ package com.example.hidden_treasures;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import android.annotation.SuppressLint;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -25,8 +27,13 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = "MainActivity";
+
+    private HashMap<Integer, Fragment.SavedState> fragmentSavedStates = new HashMap<Integer, Fragment.SavedState>();
 
     private MapFragment mapFragment;
     private CameraFragment cameraFragment;
@@ -42,12 +49,23 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 
-        if (savedInstanceState == null) {
-            mapFragment = MapFragment.newInstance();
-            cameraFragment = CameraFragment.newInstance();
-            profileFragment = ProfileFragment.newInstance();
-        } else {
+        // initialize the fragments
+        mapFragment = MapFragment.newInstance();
+        cameraFragment = CameraFragment.newInstance();
+        profileFragment = ProfileFragment.newInstance();
 
+        // get previous fragment states
+        if (savedInstanceState != null) {
+            fragmentSavedStates = (HashMap<Integer, Fragment.SavedState>) savedInstanceState.getSerializable("fragments");
+            if (fragmentSavedStates.get(R.id.action_map) != null) {
+                mapFragment.setInitialSavedState(fragmentSavedStates.get(R.id.action_map));
+            }
+            if (fragmentSavedStates.get(R.id.action_create) != null) {
+                cameraFragment.setInitialSavedState(fragmentSavedStates.get(R.id.action_create));
+            }
+            if (fragmentSavedStates.get(R.id.action_profile) != null) {
+                profileFragment.setInitialSavedState(fragmentSavedStates.get(R.id.action_profile));
+            }
         }
 
         handleBottomNavSelection();
@@ -67,6 +85,21 @@ public class MainActivity extends AppCompatActivity {
         // unregister from the event bus
         EventBus.getDefault().unregister(this);
         super.onStop();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        if (mapFragment.isAdded()) {
+            fragmentSavedStates.put(R.id.action_map, getSupportFragmentManager().saveFragmentInstanceState(mapFragment));
+        }
+        if (cameraFragment.isAdded()) {
+            fragmentSavedStates.put(R.id.action_create, getSupportFragmentManager().saveFragmentInstanceState(cameraFragment));
+        }
+        if (profileFragment.isAdded()) {
+            fragmentSavedStates.put(R.id.action_profile, getSupportFragmentManager().saveFragmentInstanceState(profileFragment));
+        }
+        outState.putSerializable("fragments", fragmentSavedStates);
+        super.onSaveInstanceState(outState);
     }
 
     public void handleBottomNavSelection() {
