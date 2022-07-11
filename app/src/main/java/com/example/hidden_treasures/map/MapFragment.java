@@ -285,6 +285,32 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
+    /* Splits the screen into 16 cells, a 4x4 grid */
+    public LatLngBounds[] splitIntoGrid() {
+        // get the bounds for the screen
+        LatLng southwest = map.getProjection().getVisibleRegion().latLngBounds.southwest;
+        LatLng northeast = map.getProjection().getVisibleRegion().latLngBounds.northeast;
+        // calculate cell height and width
+        double totalHeight = northeast.latitude - southwest.latitude;
+        double totalWidth = southwest.longitude - northeast.longitude;
+        double cellHeight = totalHeight / 4;
+        double cellWidth = totalWidth / 4;
+
+        // create a new array to store the 16 cell bounds
+        LatLngBounds[] gridCells = new LatLngBounds[16];
+        // set the first cell's bounds
+        gridCells[0] = new LatLngBounds(southwest, new LatLng(southwest.latitude + cellHeight, southwest.longitude + cellWidth));
+        // set the remaining cell bounds
+        for (int i = 1; i < 16; i++) {
+            if (i % 4 == 0) {
+                gridCells[i] = new LatLngBounds(new LatLng(gridCells[i-4].southwest.longitude + cellWidth, gridCells[i-4].southwest.latitude), new LatLng(gridCells[i-4].northeast.longitude + cellWidth, gridCells[i-4].northeast.latitude));
+            } else {
+                gridCells[i] = new LatLngBounds(new LatLng(gridCells[i-1].southwest.latitude + cellHeight, gridCells[i-1].southwest.longitude), new LatLng(gridCells[i-1].northeast.latitude + cellHeight, gridCells[i-1].northeast.longitude));
+            }
+        }
+        return gridCells;
+    }
+
 
     /* Calculates the bounds in which to get the next markers
      * Based on the camera position and zoom level */
