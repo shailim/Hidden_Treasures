@@ -52,6 +52,7 @@ public class LoginActivity extends AppCompatActivity {
                     public void done(ParseUser user, ParseException e) {
                         if (e == null) {
                             Intent i = new Intent(LoginActivity.this, MainActivity.class);
+                            i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                             startActivity(i);
                         } else {
                             Log.e(TAG, "Unable to log in");
