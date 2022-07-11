@@ -37,7 +37,10 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
@@ -239,7 +242,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 // TODO: replace random images with the real media url
                 // generate random images for markers for now for the test data
                 String url = "https://picsum.photos/id/" + id + "/200/300";
-                Bitmap image = getMarkerIcon(marker);
+
+                Bitmap image = getMarkerIcon(marker.getMedia());
 
                 Marker mapMarker = map.addMarker(new MarkerOptions()
                         .position(markerLocation)
@@ -253,10 +257,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    public Bitmap getMarkerIcon(ParseMarker marker) {
+    public Bitmap getMarkerIcon(ParseFile media) {
         Bitmap image = null;
         try {
-            image = BitmapFactory.decodeFile(marker.getMedia().getFile().getAbsolutePath());
+            image = BitmapFactory.decodeFile(media.getFile().getAbsolutePath());
         } catch (ParseException e) {
             e.printStackTrace();
         }
@@ -271,8 +275,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     /* adds an individual newly created marker to the cluster manager */
-    public void addCreatedMarker(String title, LatLng location, String imageUrl) {
-        MarkerItem newMarker = new MarkerItem(location.latitude, location.longitude, title, imageUrl);
+    public void addCreatedMarker(String title, LatLng location, ParseFile media) {
+        Bitmap image = getMarkerIcon(media);
+        Marker newMarker = map.addMarker(new MarkerOptions()
+                .position(location)
+                .title(title)
+                .icon(BitmapDescriptorFactory.fromBitmap(image)));
+        newMarker.setTag(media.getUrl());
         Log.i(TAG, "moving camera to new marker");
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(48.8566, 2.3522), 13));
     }
@@ -337,7 +346,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 if (bounds[i].contains(marker.getPosition())) {
                     count++;
                     //if count > 5, only show the five markers, add others to list of invisible/removed
-                    if (count > 3) {
+                    if (count > 1) {
                         // add removed marker to list
                         removedMarkers.add(marker);
                         marker.setVisible(false);
@@ -346,9 +355,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
             // if there's more space within a cell for more markers, go through the removed markers list
             List<Marker> toBeAddedBack = new ArrayList<>();
-            if (count < 3) {
+            if (count < 1) {
                 for (Marker marker : removedMarkers) {
-                    if (count < 3) {
+                    if (count < 1) {
                         if (bounds[i].contains(marker.getPosition())) {
                             marker.setVisible(true);
 

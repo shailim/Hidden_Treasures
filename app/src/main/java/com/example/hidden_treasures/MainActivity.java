@@ -22,6 +22,7 @@ import com.example.hidden_treasures.profile.ProfileFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
+import com.parse.ParseFile;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -133,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setSelectedItemId(R.id.action_map);
 
         LatLng location = new LatLng(event.marker.getLocation().getLatitude(), event.marker.getLocation().getLongitude());
-        displayMapFragment(event.marker.getTitle(), location, event.marker.getMedia().getUrl());
+        displayMapFragment(event.marker.getTitle(), location, event.marker.getMedia());
         handleBottomNavSelection();
     }
 
@@ -158,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /* shows map fragment and hides the other fragments, also displays new marker on map */
-    public void displayMapFragment(String title, LatLng location, String imageUrl) {
+    public void displayMapFragment(String title, LatLng location, ParseFile media) {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         ft.setCustomAnimations(
                 R.anim.slide_in,  // enter
@@ -169,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
         } else { // fragment needs to be added to frame container
             ft.add(R.id.fragmentContainer, mapFragment);
         }
-        mapFragment.addCreatedMarker(title, location, imageUrl);
+        mapFragment.addCreatedMarker(title, location, media);
         // Hide create fragment
         if (cameraFragment.isAdded()) { ft.hide(cameraFragment); }
         // Hide profile fragment

@@ -4,6 +4,7 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="../../../../layout/custom_preview.xml" value="0.1" />
+        <entry key="app/src/main/res/drawable/blur_icon.xml" value="0.1515" />
         <entry key="app/src/main/res/drawable/border.xml" value="0.203" />
         <entry key="app/src/main/res/drawable/ic_baseline_camera_alt_24.xml" value="0.1" />
         <entry key="app/src/main/res/drawable/ic_baseline_map_24.xml" value="0.1" />
