@@ -35,18 +35,37 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.TileOverlay;
+import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
+import com.google.maps.android.clustering.Cluster;
+import com.google.maps.android.clustering.ClusterItem;
 import com.google.maps.android.clustering.ClusterManager;
+import com.google.maps.android.clustering.view.ClusterRenderer;
+import com.google.maps.android.collections.GroundOverlayManager;
+import com.google.maps.android.collections.MarkerManager;
+import com.google.maps.android.collections.PolygonManager;
+import com.google.maps.android.collections.PolylineManager;
+import com.google.maps.android.data.Feature;
+import com.google.maps.android.data.Layer;
+import com.google.maps.android.data.geojson.GeoJsonFeature;
+import com.google.maps.android.data.geojson.GeoJsonLayer;
+import com.google.maps.android.data.geojson.GeoJsonPoint;
+import com.google.maps.android.heatmaps.HeatmapTileProvider;
 import com.parse.FindCallback;
+import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseQuery;
+
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -63,8 +82,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public static final String TAG = "MapFragment";
 
     private List<String> markerIDs = new ArrayList<>();
-    private ClusterManager<MarkerItem> clusterManager;
+    private List<ParseMarker> markers = new ArrayList<>();
     private GoogleMap map;
+    private GeoJsonLayer markerLayer;
 
     private LatLng lastExploredLocation = null;
     private ParseGeoPoint southwestBound = null;
@@ -132,26 +152,26 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // set map style
         map.setMapStyle(new MapStyleOptions(getResources()
                 .getString(R.string.map_style_json)));
-        map.setMinZoomPreference(9);
+        //map.setMinZoomPreference(9);
         Log.i(TAG, "showing map");
-        // initialize the cluster manager
-        clusterManager = new ClusterManager<MarkerItem>(getContext(), map);
-        map.setOnCameraIdleListener(clusterManager);
-        map.setOnMarkerClickListener(clusterManager);
-        clusterManager.setAnimation(false);
+        // create the marker layer, passing in the map and no json file
+        JSONObject geoJsonObject = new JSONObject();
+        markerLayer = new GeoJsonLayer(map, geoJsonObject);
+        markerLayer.addLayerToMap();
         // if previous state was restored
         if (lastExploredLocation != null) {
             // go to last looked at location and get those markers again
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(lastExploredLocation, lastZoomLevel));
-            getMarkers(50, southwestBound, northeastBound);
+            getMarkers(500, southwestBound, northeastBound);
         } else {
+            Log.i(TAG, "default initial position");
             // set initial position of map
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 10));
             /* To get initial markers */
             ParseGeoPoint southwestBound = new ParseGeoPoint(37.4530 - 5, -122.1817 - 5);
             ParseGeoPoint northeastBound = new ParseGeoPoint(37.4530 + 5, -122.1817 + 5);
             //get markers from database and place on map
-            getMarkers(50, southwestBound, northeastBound);
+            getMarkers(500, southwestBound, northeastBound);
         }
 
         // enables any markers on the map to be clickable
@@ -179,6 +199,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     }
                     Log.i(TAG, String.valueOf(markerIDs.size()));
                     Log.i(TAG, "got the markers");
+                    markers.addAll(objects);
                     // call function to place markers on map
                     placeMarkersOnMap(objects);
                 } else {
@@ -196,19 +217,22 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             for (ParseMarker marker : markers) {
                 // get the marker values
                 LatLng userLocation = new LatLng(marker.getLocation().getLatitude(), marker.getLocation().getLongitude());
-                String title = marker.getTitle();
-                ParseFile media = marker.getMedia();
-
                 // TODO: replace random images with the real media url
                 // generate random images for markers for now for the test data
                 String url = "https://picsum.photos/id/" + id + "/200/300";
 
-                // create a new marker item and add it to the cluster manager
-                MarkerItem newMarker = new MarkerItem(userLocation.latitude, userLocation.longitude, title, url);
-                clusterManager.addItem(newMarker);
+                GeoJsonPoint point = new GeoJsonPoint(userLocation);
+                HashMap<String, String> properties = new HashMap<>();
+                properties.put("title", marker.getTitle());
+                properties.put("imageUrl", url);
+                properties.put("latitude", String.valueOf(marker.getLocation().getLatitude()));
+                properties.put("longitude", String.valueOf(marker.getLocation().getLongitude()));
+
+                GeoJsonFeature pointFeature = new GeoJsonFeature(point, null, properties, null);
+                markerLayer.addFeature(pointFeature);
+
                 id++;
             }
-            clusterManager.cluster();
             Log.i(TAG, "placed markers on map");
         }
     }
@@ -216,7 +240,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     /* adds an individual newly created marker to the cluster manager */
     public void addCreatedMarker(String title, LatLng location, String imageUrl) {
         MarkerItem newMarker = new MarkerItem(location.latitude, location.longitude, title, imageUrl);
-        clusterManager.addItem(newMarker);
         Log.i(TAG, "moving camera to new marker");
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(48.8566, 2.3522), 13));
     }
@@ -224,20 +247,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     /* Adds a click listener on markers
      * On marker click, a marker detail view opens up  */
     public void enableMarkerClicks() {
-        clusterManager.setOnClusterItemClickListener(new ClusterManager.OnClusterItemClickListener<MarkerItem>() {
+        markerLayer.setOnFeatureClickListener(new Layer.OnFeatureClickListener() {
             @Override
-            public boolean onClusterItemClick(MarkerItem item) {
+            public void onFeatureClick(Feature feature) {
                 // to set marker detail as a child fragment
                 FragmentManager childFragMan = getChildFragmentManager();
                 FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
                 // create a new marker detail fragment instance and pass in image url, title
-                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance((String) item.getTag(), item.getTitle());
+                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance((String) feature.getProperty("imageUrl"), feature.getProperty("title"));
                 // add the child fragment to current map fragment
                 childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
                 childFragTrans.addToBackStack(null);
                 childFragTrans.commit();
-                return false;
+                Log.i(TAG, "Feature clicked: " + feature.getProperty("title"));
             }
         });
     }
@@ -260,9 +283,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 getRadius(southwest, northeast, zoomLevel);
             }
         });
-
-
     }
+
 
     /* Calculates the bounds in which to get the next markers
      * Based on the camera position and zoom level */
