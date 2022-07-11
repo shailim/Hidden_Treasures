@@ -283,11 +283,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 // calculate bounds to get more markers
                 getRadius(southwest, northeast, zoomLevel);
 
-                // resetting the removed markers to show on map again
-                for (GeoJsonFeature point : removedMarkers) {
-                    markerLayer.addFeature(point);
-                }
-                removedMarkers.clear();
                 // re-cluster markers
                 clusterMarkers();
             }
@@ -314,6 +309,29 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     }
                 }
             }
+            // if there's more space within a cell for more markers, go through the removed markers list
+            List<GeoJsonFeature> toBeAddedBack = new ArrayList<>();
+            if (count < 5) {
+                for (GeoJsonFeature point : removedMarkers) {
+                    if (count < 5) {
+                        double latitude = Double.parseDouble(point.getProperty("latitude"));
+                        double longitude = Double.parseDouble(point.getProperty("longitude"));
+                        if (bound.contains(new LatLng(latitude, longitude))) {
+                            markerLayer.addFeature(point);
+                            // take it out from removedMarkers list later by adding it to an toBeAddedBack list
+                            toBeAddedBack.add(point);
+                            count++;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+            // clean up removed markers list
+            for (GeoJsonFeature point: toBeAddedBack) {
+                removedMarkers.remove(point);
+            }
+            toBeAddedBack.clear();
         }
         // TODO: instead of just removing, show the count of removed on map so user knows there are more
         // remove all the extra markers
