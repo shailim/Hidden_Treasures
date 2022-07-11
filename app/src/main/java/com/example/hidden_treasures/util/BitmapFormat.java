@@ -11,14 +11,11 @@ import android.graphics.RectF;
 /* This class is used to format bitmap images */
 public class BitmapFormat {
 
-    private Bitmap srcBitmap;
-
-    public BitmapFormat(Bitmap srcBitmap) {
-        this.srcBitmap = srcBitmap;
+    public BitmapFormat() {
     }
 
     /* Crops the bitmap image to a circle */
-    public Bitmap getCircularBitmap() {
+    public Bitmap getCircularBitmap(Bitmap srcBitmap) {
         // Calculate the circular bitmap width with border
         int squareBitmapWidth = Math.min(srcBitmap.getWidth(), srcBitmap.getHeight());
         // Initialize a new instance of Bitmap
@@ -46,7 +43,7 @@ public class BitmapFormat {
     }
 
     // Adds a border around circular bitmap
-    protected Bitmap addBorderToCircularBitmap(int borderWidth, int borderColor) {
+    public Bitmap addBorderToCircularBitmap(Bitmap srcBitmap, int borderWidth, int borderColor) {
         // Calculate the circular bitmap width with border
         int dstBitmapWidth = srcBitmap.getWidth()+borderWidth*2;
         // Initialize a new Bitmap to make it bordered circular bitmap
@@ -74,7 +71,7 @@ public class BitmapFormat {
     }
 
     // Adds a shadow around circular bitmap
-    protected Bitmap addShadowToCircularBitmap(int shadowWidth, int shadowColor){
+    public Bitmap addShadowToCircularBitmap(Bitmap srcBitmap, int shadowWidth, int shadowColor){
         // Calculate the circular bitmap width with shadow
         int dstBitmapWidth = srcBitmap.getWidth()+shadowWidth*2;
         Bitmap dstBitmap = Bitmap.createBitmap(dstBitmapWidth,dstBitmapWidth, Bitmap.Config.ARGB_8888);

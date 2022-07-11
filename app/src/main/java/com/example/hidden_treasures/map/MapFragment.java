@@ -3,7 +3,9 @@ package com.example.hidden_treasures.map;
 import static com.parse.Parse.getApplicationContext;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
@@ -29,14 +31,20 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
+import com.example.hidden_treasures.util.BitmapFormat;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.libraries.places.api.Places;
@@ -82,10 +90,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public static final String TAG = "MapFragment";
 
     private List<String> markerIDs = new ArrayList<>();
-    private List<ParseMarker> markers = new ArrayList<>();
-    private List<GeoJsonFeature> removedMarkers = new ArrayList<>();
+    private List<Marker> markers = new ArrayList<>();
+    private List<Marker> removedMarkers = new ArrayList<>();
     private GoogleMap map;
     private GeoJsonLayer markerLayer;
+    private List<Polyline> lines = new ArrayList<>();
 
     private LatLng lastExploredLocation = null;
     private ParseGeoPoint southwestBound = null;
@@ -155,15 +164,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 .getString(R.string.map_style_json)));
         //map.setMinZoomPreference(9);
         Log.i(TAG, "showing map");
+
         // create the marker layer, passing in the map and no json file
         JSONObject geoJsonObject = new JSONObject();
         markerLayer = new GeoJsonLayer(map, geoJsonObject);
         markerLayer.addLayerToMap();
+
         // if previous state was restored
         if (lastExploredLocation != null) {
             // go to last looked at location and get those markers again
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(lastExploredLocation, lastZoomLevel));
-            getMarkers(500, southwestBound, northeastBound);
+            getMarkers(numMarkersToGet(lastZoomLevel), southwestBound, northeastBound);
         } else {
             Log.i(TAG, "default initial position");
             // set initial position of map
@@ -172,13 +183,21 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             ParseGeoPoint southwestBound = new ParseGeoPoint(37.4530 - 5, -122.1817 - 5);
             ParseGeoPoint northeastBound = new ParseGeoPoint(37.4530 + 5, -122.1817 + 5);
             //get markers from database and place on map
-            getMarkers(500, southwestBound, northeastBound);
+            getMarkers(100, southwestBound, northeastBound);
         }
 
         // enables any markers on the map to be clickable
         enableMarkerClicks();
         // listen for whenever camera is idle on map
         watchCameraIdle();
+    }
+
+    public int numMarkersToGet(float zoomLevel) {
+        if (zoomLevel > 8) {
+            return 100;
+        } else {
+            return 100000;
+        }
     }
 
     /* retrieves markers from database, then calls a function to place markers on map */
@@ -200,7 +219,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     }
                     Log.i(TAG, String.valueOf(markerIDs.size()));
                     Log.i(TAG, "got the markers");
-                    markers.addAll(objects);
                     // call function to place markers on map
                     placeMarkersOnMap(objects);
                 } else {
@@ -211,31 +229,45 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     /* Creates new markers and places them on the map */
-    private void placeMarkersOnMap(List<ParseMarker> markers) {
-        if (markers != null && markers.size() > 0) {
+    private void placeMarkersOnMap(List<ParseMarker> parseMarkers) {
+        if (parseMarkers != null && parseMarkers.size() > 0) {
             // id is used to get random images
             int id = 1;
-            for (ParseMarker marker : markers) {
+            for (ParseMarker marker : parseMarkers) {
                 // get the marker values
-                LatLng userLocation = new LatLng(marker.getLocation().getLatitude(), marker.getLocation().getLongitude());
+                LatLng markerLocation = new LatLng(marker.getLocation().getLatitude(), marker.getLocation().getLongitude());
                 // TODO: replace random images with the real media url
                 // generate random images for markers for now for the test data
                 String url = "https://picsum.photos/id/" + id + "/200/300";
+                Bitmap image = getMarkerIcon(marker);
 
-                GeoJsonPoint point = new GeoJsonPoint(userLocation);
-                HashMap<String, String> properties = new HashMap<>();
-                properties.put("title", marker.getTitle());
-                properties.put("imageUrl", url);
-                properties.put("latitude", String.valueOf(marker.getLocation().getLatitude()));
-                properties.put("longitude", String.valueOf(marker.getLocation().getLongitude()));
-
-                GeoJsonFeature pointFeature = new GeoJsonFeature(point, null, properties, null);
-                markerLayer.addFeature(pointFeature);
-
+                Marker mapMarker = map.addMarker(new MarkerOptions()
+                        .position(markerLocation)
+                        .title(marker.getTitle())
+                        .icon(BitmapDescriptorFactory.fromBitmap(image)));
+                mapMarker.setTag(url);
+                markers.add(mapMarker);
                 id++;
             }
             Log.i(TAG, "placed markers on map");
         }
+    }
+
+    public Bitmap getMarkerIcon(ParseMarker marker) {
+        Bitmap image = null;
+        try {
+            image = BitmapFactory.decodeFile(marker.getMedia().getFile().getAbsolutePath());
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        if (image != null) {
+            BitmapFormat formatIcon = new BitmapFormat();
+            image = Bitmap.createScaledBitmap(image, 75, 75, false);
+            image = formatIcon.getCircularBitmap(image);
+            image = formatIcon.addBorderToCircularBitmap(image, 4, Color.WHITE);
+            image = formatIcon.addShadowToCircularBitmap(image, 4, Color.LTGRAY);
+        }
+        return image;
     }
 
     /* adds an individual newly created marker to the cluster manager */
@@ -278,10 +310,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 // get coordinates and zoom level of current screen bounds
                 LatLng southwest = map.getProjection().getVisibleRegion().latLngBounds.southwest;
                 LatLng northeast = map.getProjection().getVisibleRegion().latLngBounds.northeast;
-                map.getProjection().getVisibleRegion();
                 float zoomLevel = map.getCameraPosition().zoom;
-                // calculate bounds to get more markers
-                getRadius(southwest, northeast, zoomLevel);
+
+                // create the two points needed for the rectangular bound
+                ParseGeoPoint southwestBound = new ParseGeoPoint(southwest.latitude, southwest.longitude);
+                ParseGeoPoint northeastBound = new ParseGeoPoint(northeast.latitude, northeast.longitude);
+                // get more markers within the bounds
+                getMarkers(numMarkersToGet(zoomLevel), southwestBound, northeastBound);
 
                 // re-cluster markers
                 clusterMarkers();
@@ -294,32 +329,31 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // first split screen into grid and get an array of 16 cells
         LatLngBounds[] bounds = splitIntoGrid();
         // iterate through each bound
-        for (LatLngBounds bound : bounds) {
+        Log.i(TAG, String.valueOf(bounds.length));
+        for (int i = 0; i < 16; i++) {
             //find count of markers within each bound
             int count = 0;
-            for (GeoJsonFeature point : markerLayer.getFeatures()) {
-                double latitude = Double.parseDouble(point.getProperty("latitude"));
-                double longitude = Double.parseDouble(point.getProperty("longitude"));
-                if (bound.contains(new LatLng(latitude, longitude))) {
+            for (Marker marker : markers) {
+                if (bounds[i].contains(marker.getPosition())) {
                     count++;
                     //if count > 5, only show the five markers, add others to list of invisible/removed
-                    if (count > 5) {
+                    if (count > 3) {
                         // add removed marker to list
-                        removedMarkers.add(point);
+                        removedMarkers.add(marker);
+                        marker.setVisible(false);
                     }
                 }
             }
             // if there's more space within a cell for more markers, go through the removed markers list
-            List<GeoJsonFeature> toBeAddedBack = new ArrayList<>();
-            if (count < 5) {
-                for (GeoJsonFeature point : removedMarkers) {
-                    if (count < 5) {
-                        double latitude = Double.parseDouble(point.getProperty("latitude"));
-                        double longitude = Double.parseDouble(point.getProperty("longitude"));
-                        if (bound.contains(new LatLng(latitude, longitude))) {
-                            markerLayer.addFeature(point);
+            List<Marker> toBeAddedBack = new ArrayList<>();
+            if (count < 3) {
+                for (Marker marker : removedMarkers) {
+                    if (count < 3) {
+                        if (bounds[i].contains(marker.getPosition())) {
+                            marker.setVisible(true);
+
                             // take it out from removedMarkers list later by adding it to an toBeAddedBack list
-                            toBeAddedBack.add(point);
+                            toBeAddedBack.add(marker);
                             count++;
                         }
                     } else {
@@ -328,28 +362,43 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 }
             }
             // clean up removed markers list
-            for (GeoJsonFeature point: toBeAddedBack) {
-                removedMarkers.remove(point);
+            for (Marker marker: toBeAddedBack) {
+                removedMarkers.remove(marker);
             }
             toBeAddedBack.clear();
-        }
-        // TODO: instead of just removing, show the count of removed on map so user knows there are more
-        // remove all the extra markers
-        for (GeoJsonFeature point : removedMarkers) {
-            markerLayer.removeFeature(point);
+
+            // TODO: instead of just removing, show the count of removed on map so user knows there are more
+            // remove all the extra markers
+            for (Marker marker : removedMarkers) {
+                marker.setVisible(false);
+            }
         }
     }
 
     /* Splits the screen into 16 cells, a 4x4 grid */
     public LatLngBounds[] splitIntoGrid() {
+        for (Polyline line : lines) {
+            line.remove();
+        }
         // get the bounds for the screen
         LatLng southwest = map.getProjection().getVisibleRegion().latLngBounds.southwest;
         LatLng northeast = map.getProjection().getVisibleRegion().latLngBounds.northeast;
+
         // calculate cell height and width
-        double totalHeight = northeast.latitude - southwest.latitude;
-        double totalWidth = southwest.longitude - northeast.longitude;
+        double totalHeight = Math.abs(northeast.latitude - southwest.latitude);
+        double totalWidth = Math.abs(southwest.longitude - northeast.longitude);
         double cellHeight = totalHeight / 4;
         double cellWidth = totalWidth / 4;
+
+        Polyline polyline2 = map.addPolyline(new PolylineOptions()
+                .clickable(true)
+                .add(
+                        southwest,
+                        new LatLng(southwest.latitude + cellHeight, southwest.longitude),
+                        new LatLng(southwest.latitude + cellHeight, southwest.longitude + cellWidth),
+                        new LatLng(southwest.latitude, southwest.longitude + cellWidth),
+                        southwest));
+        lines.add(polyline2);
 
         // create a new array to store the 16 cell bounds
         LatLngBounds[] gridCells = new LatLngBounds[16];
@@ -358,56 +407,22 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // set the remaining cell bounds
         for (int i = 1; i < 16; i++) {
             if (i % 4 == 0) {
-                gridCells[i] = new LatLngBounds(new LatLng(gridCells[i-4].southwest.longitude + cellWidth, gridCells[i-4].southwest.latitude), new LatLng(gridCells[i-4].northeast.longitude + cellWidth, gridCells[i-4].northeast.latitude));
+                gridCells[i] = new LatLngBounds(new LatLng(gridCells[i-4].southwest.latitude, gridCells[i-4].southwest.longitude + cellWidth), new LatLng(gridCells[i-4].northeast.latitude, gridCells[i-4].northeast.longitude + cellWidth));
             } else {
                 gridCells[i] = new LatLngBounds(new LatLng(gridCells[i-1].southwest.latitude + cellHeight, gridCells[i-1].southwest.longitude), new LatLng(gridCells[i-1].northeast.latitude + cellHeight, gridCells[i-1].northeast.longitude));
             }
+            Polyline polyline1 = map.addPolyline(new PolylineOptions()
+                    .clickable(true)
+                    .add(
+                            gridCells[i].southwest,
+                            new LatLng(gridCells[i].southwest.latitude + cellHeight, gridCells[i].southwest.longitude),
+                            gridCells[i].northeast,
+                            new LatLng(gridCells[i].northeast.latitude-cellHeight, gridCells[i].northeast.longitude),
+                            gridCells[i].southwest));
+            lines.add(polyline1);
+            Log.i(TAG, gridCells[i].southwest + " " + gridCells[i].northeast);
         }
         return gridCells;
-    }
-
-
-    /* Calculates the bounds in which to get the next markers
-     * Based on the camera position and zoom level */
-    public void getRadius(LatLng southwest, LatLng northeast, float zoomLevel) {
-        int numMarkersToGet;
-        double southwestLat = southwest.latitude, southwestLong = southwest.longitude;
-        double northeastLat = northeast.latitude, northeastLong = northeast.longitude;
-
-        // TODO: refactor this method, change the logic
-        if (zoomLevel < 11 ) {
-            // get only 10 and scatter them around
-            numMarkersToGet = 1000;
-
-        } else if (zoomLevel < 13) {
-            // get 20 and scatter them around
-            numMarkersToGet = 1000;
-            // get extra
-            southwestLat = southwestLat - 2;
-            southwestLong = southwestLong - 2;
-            northeastLat = northeastLat + 2;
-            northeastLong = northeastLong + 2;
-
-        } else if (zoomLevel < 15) {
-            // get all markers, max 1000
-            numMarkersToGet = 1000;
-            southwestLat = southwestLat - 3;
-            southwestLong = southwestLong - 3;
-            northeastLat = northeastLat + 3;
-            northeastLong = northeastLong + 3;
-
-        } else {
-            numMarkersToGet = 1000;
-            southwestLat = southwestLat - 5;
-            southwestLong = southwestLong - 5;
-            northeastLat = northeastLat + 5;
-            northeastLong = northeastLong + 5;
-        }
-        // create the two points needed for the rectangular bound
-        ParseGeoPoint southwestBound = new ParseGeoPoint(southwestLat, southwestLong);
-        ParseGeoPoint northeastBound = new ParseGeoPoint(northeastLat, northeastLong);
-        // get more markers within the bounds
-        getMarkers(numMarkersToGet, southwestBound, northeastBound);
     }
 
     /* Uses Google's Places API to display place name for autocomplete searching */
