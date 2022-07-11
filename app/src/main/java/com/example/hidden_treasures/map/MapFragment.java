@@ -83,6 +83,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private List<String> markerIDs = new ArrayList<>();
     private List<ParseMarker> markers = new ArrayList<>();
+    private List<GeoJsonFeature> removedMarkers = new ArrayList<>();
     private GoogleMap map;
     private GeoJsonLayer markerLayer;
 
@@ -281,8 +282,44 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 float zoomLevel = map.getCameraPosition().zoom;
                 // calculate bounds to get more markers
                 getRadius(southwest, northeast, zoomLevel);
+
+                // resetting the removed markers to show on map again
+                for (GeoJsonFeature point : removedMarkers) {
+                    markerLayer.addFeature(point);
+                }
+                removedMarkers.clear();
+                // re-cluster markers
+                clusterMarkers();
             }
         });
+    }
+
+    public void clusterMarkers() {
+        Log.i(TAG, "now onto clustering");
+        // first split screen into grid and get an array of 16 cells
+        LatLngBounds[] bounds = splitIntoGrid();
+        // iterate through each bound
+        for (LatLngBounds bound : bounds) {
+            //find count of markers within each bound
+            int count = 0;
+            for (GeoJsonFeature point : markerLayer.getFeatures()) {
+                double latitude = Double.parseDouble(point.getProperty("latitude"));
+                double longitude = Double.parseDouble(point.getProperty("longitude"));
+                if (bound.contains(new LatLng(latitude, longitude))) {
+                    count++;
+                    //if count > 5, only show the five markers, add others to list of invisible/removed
+                    if (count > 5) {
+                        // add removed marker to list
+                        removedMarkers.add(point);
+                    }
+                }
+            }
+        }
+        // TODO: instead of just removing, show the count of removed on map so user knows there are more
+        // remove all the extra markers
+        for (GeoJsonFeature point : removedMarkers) {
+            markerLayer.removeFeature(point);
+        }
     }
 
     /* Splits the screen into 16 cells, a 4x4 grid */
