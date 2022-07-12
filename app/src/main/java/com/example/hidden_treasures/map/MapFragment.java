@@ -90,15 +90,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // associating marker view model with map fragment and getting the marker view model
-        markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
-        markerViewModel.getAllMarkers().observe(this, markers -> {
-            // save markers whenever it updates
-            markerEntities.clear();
-            markerEntities.addAll(markers);
-            Log.i("MarkerLiveData", String.valueOf(markerEntities.size()));
-        });
-
         if (savedInstanceState != null) {
             Log.i(TAG, "getting saved values");
             // get values from last query for markers
@@ -107,6 +98,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             northeastBound = savedInstanceState.getParcelable("northeastBound");
             lastZoomLevel = savedInstanceState.getFloat("lastZoomLevel");
         }
+        // associating marker view model with map fragment and getting the marker view model
+        markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
+        // get the initial set of markers from view model
+        markerEntities.addAll(markerViewModel.getWithinBounds());
     }
 
     @Override
@@ -156,18 +151,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if (lastExploredLocation != null) {
             // go to last looked at location and get those markers again
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(lastExploredLocation, lastZoomLevel));
-            getMarkers(numMarkersToGet(lastZoomLevel), southwestBound, northeastBound);
         } else {
-            Log.i(TAG, "default initial position");
             // set initial position of map
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 10));
-            /* To get initial markers */
-            ParseGeoPoint southwestBound = new ParseGeoPoint(37.4530 - 5, -122.1817 - 5);
-            ParseGeoPoint northeastBound = new ParseGeoPoint(37.4530 + 5, -122.1817 + 5);
-            //get markers from database and place on map
-            getMarkers(100, southwestBound, northeastBound);
         }
-
+        // place initial set of markers on map
+        placeMarkersOnMap(markerEntities);
         // enables any markers on the map to be clickable
         enableMarkerClicks();
         // listen for whenever camera is idle on map
@@ -182,8 +171,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
+    // TODO: change this function to get from local database
     /* retrieves markers from database, then calls a function to place markers on map */
     private void getMarkers(int numMarkersToGet, ParseGeoPoint southwestBound, ParseGeoPoint northeastBound) {
+        // TODO: get from room database from now on, and upon getting each set, update the someMarkers list in view model
         this.southwestBound = southwestBound;
         this.northeastBound = northeastBound;
         ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
@@ -210,14 +201,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
-    /* Creates new markers and places them on the map */
-    private void placeMarkersOnMap(List<ParseMarker> parseMarkers) {
-        if (parseMarkers != null && parseMarkers.size() > 0) {
+    /* Using MarkerEntity instead of ParseMarker, Creates new markers and places them on the map */
+    private void placeMarkersOnMap(List<MarkerEntity> objects) {
+        if (objects != null && objects.size() > 0) {
             // id is used to get random images
             int id = 1;
-            for (ParseMarker marker : parseMarkers) {
+            for (MarkerEntity object : objects) {
                 // get the marker values
-                LatLng markerLocation = new LatLng(marker.getLocation().getLatitude(), marker.getLocation().getLongitude());
+                LatLng markerLocation = new LatLng(object.latitude, object.longitude);
                 // TODO: replace random images with the real media url
                 // generate random images for markers for now for the test data
                 String url = "https://picsum.photos/id/" + id + "/200/300";
@@ -226,8 +217,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
                 Marker mapMarker = map.addMarker(new MarkerOptions()
                         .position(markerLocation)
-                        .title(marker.getTitle()));
-                        //.icon(BitmapDescriptorFactory.fromBitmap(image)));
+                        .title(object.title));
+                //.icon(BitmapDescriptorFactory.fromBitmap(image)));
                 mapMarker.setTag(url);
                 markers.add(mapMarker);
                 id++;

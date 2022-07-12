@@ -20,6 +20,10 @@ public class MarkerEntityRepository {
         return allMarkers;
     }
 
+    List<MarkerEntity> getWithinBounds(double swLat, double swLong, double neLat, double neLong) {
+        return markerEntityDao.loadAllWithinBounds(swLat, swLong, neLat, neLong);
+    }
+
     void insert(MarkerEntity marker) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             markerEntityDao.insert(marker);
