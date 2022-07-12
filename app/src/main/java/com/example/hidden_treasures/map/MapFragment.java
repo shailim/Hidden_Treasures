@@ -65,7 +65,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private List<Marker> markers = new ArrayList<>();
     private List<Marker> removedMarkers = new ArrayList<>();
     private GoogleMap map;
-    private GeoJsonLayer markerLayer;
     private List<Polyline> lines = new ArrayList<>();
 
     private LatLng lastExploredLocation = null;
@@ -136,11 +135,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 .getString(R.string.map_style_json)));
         //map.setMinZoomPreference(9);
         Log.i(TAG, "showing map");
-
-        // create the marker layer, passing in the map and no json file
-        JSONObject geoJsonObject = new JSONObject();
-        markerLayer = new GeoJsonLayer(map, geoJsonObject);
-        markerLayer.addLayerToMap();
 
         // if previous state was restored
         if (lastExploredLocation != null) {
@@ -258,20 +252,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     /* Adds a click listener on markers
      * On marker click, a marker detail view opens up  */
     public void enableMarkerClicks() {
-        markerLayer.setOnFeatureClickListener(new Layer.OnFeatureClickListener() {
+        map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
-            public void onFeatureClick(Feature feature) {
+            public boolean onMarkerClick(@NonNull Marker marker) {
                 // to set marker detail as a child fragment
                 FragmentManager childFragMan = getChildFragmentManager();
                 FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
                 // create a new marker detail fragment instance and pass in image url, title
-                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance((String) feature.getProperty("imageUrl"), feature.getProperty("title"));
+                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance((String) marker.getTag(), marker.getTitle());
                 // add the child fragment to current map fragment
                 childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
                 childFragTrans.addToBackStack(null);
                 childFragTrans.commit();
-                Log.i(TAG, "Feature clicked: " + feature.getProperty("title"));
+                return false;
             }
         });
     }
@@ -315,7 +309,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 if (bounds[i].contains(marker.getPosition())) {
                     count++;
                     //if count > 5, only show the five markers, add others to list of invisible/removed
-                    if (count > 1) {
+                    if (count > 5) {
                         // add removed marker to list
                         removedMarkers.add(marker);
                         marker.setVisible(false);
@@ -324,9 +318,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
             // if there's more space within a cell for more markers, go through the removed markers list
             List<Marker> toBeAddedBack = new ArrayList<>();
-            if (count < 1) {
+            if (count < 5) {
                 for (Marker marker : removedMarkers) {
-                    if (count < 1) {
+                    if (count < 5) {
                         if (bounds[i].contains(marker.getPosition())) {
                             marker.setVisible(true);
 
@@ -368,16 +362,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         double cellHeight = totalHeight / 4;
         double cellWidth = totalWidth / 4;
 
-        Polyline polyline2 = map.addPolyline(new PolylineOptions()
-                .clickable(true)
-                .add(
-                        southwest,
-                        new LatLng(southwest.latitude + cellHeight, southwest.longitude),
-                        new LatLng(southwest.latitude + cellHeight, southwest.longitude + cellWidth),
-                        new LatLng(southwest.latitude, southwest.longitude + cellWidth),
-                        southwest));
-        lines.add(polyline2);
-
         // create a new array to store the 16 cell bounds
         LatLngBounds[] gridCells = new LatLngBounds[16];
         // set the first cell's bounds
@@ -389,15 +373,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             } else {
                 gridCells[i] = new LatLngBounds(new LatLng(gridCells[i-1].southwest.latitude + cellHeight, gridCells[i-1].southwest.longitude), new LatLng(gridCells[i-1].northeast.latitude + cellHeight, gridCells[i-1].northeast.longitude));
             }
-            Polyline polyline1 = map.addPolyline(new PolylineOptions()
-                    .clickable(true)
-                    .add(
-                            gridCells[i].southwest,
-                            new LatLng(gridCells[i].southwest.latitude + cellHeight, gridCells[i].southwest.longitude),
-                            gridCells[i].northeast,
-                            new LatLng(gridCells[i].northeast.latitude-cellHeight, gridCells[i].northeast.longitude),
-                            gridCells[i].southwest));
-            lines.add(polyline1);
             Log.i(TAG, gridCells[i].southwest + " " + gridCells[i].northeast);
         }
         return gridCells;
