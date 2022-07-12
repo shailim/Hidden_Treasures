@@ -19,7 +19,10 @@ import android.view.ViewGroup;
 
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
 
+import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
+import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.example.hidden_treasures.util.BitmapFormat;
@@ -61,8 +64,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public static final String TAG = "MapFragment";
 
+    private MarkerViewModel markerViewModel;
+
     private List<String> markerIDs = new ArrayList<>();
     private List<Marker> markers = new ArrayList<>();
+    private List<MarkerEntity> markerEntities = new ArrayList<>();
     private List<Marker> removedMarkers = new ArrayList<>();
     private GoogleMap map;
     private List<Polyline> lines = new ArrayList<>();
@@ -83,6 +89,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // associating marker view model with map fragment and getting the marker view model
+        markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
+        markerViewModel.getAllMarkers().observe(this, markers -> {
+            // save markers whenever it updates
+            markerEntities.addAll(markers);
+            Log.i(TAG, String.valueOf(markerEntities.size()));
+        });
+
         if (savedInstanceState != null) {
             Log.i(TAG, "getting saved values");
             // get values from last query for markers
@@ -206,12 +220,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 // generate random images for markers for now for the test data
                 String url = "https://picsum.photos/id/" + id + "/200/300";
 
-                Bitmap image = getMarkerIcon(marker.getMedia());
+                //Bitmap image = getMarkerIcon(marker.getMedia());
 
                 Marker mapMarker = map.addMarker(new MarkerOptions()
                         .position(markerLocation)
-                        .title(marker.getTitle())
-                        .icon(BitmapDescriptorFactory.fromBitmap(image)));
+                        .title(marker.getTitle()));
+                        //.icon(BitmapDescriptorFactory.fromBitmap(image)));
                 mapMarker.setTag(url);
                 markers.add(mapMarker);
                 id++;

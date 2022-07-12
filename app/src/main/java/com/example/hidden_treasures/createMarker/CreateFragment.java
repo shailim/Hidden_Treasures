@@ -25,8 +25,11 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.hidden_treasures.MainActivity;
+import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
+import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -36,16 +39,21 @@ import com.google.android.gms.tasks.Task;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
+import com.parse.ParseUser;
 import com.parse.SaveCallback;
 import com.roger.catloadinglibrary.CatLoadingView;
 
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
+import java.sql.Date;
+import java.util.UUID;
 
 public class CreateFragment extends Fragment {
 
     private static final String TAG = "CreateFragment";
+
+    private MarkerViewModel markerViewModel;
 
     public static String BITMAP_IMAGE = "takenImage";
     public static String PHOTO_FILE = "photoFile";
@@ -97,6 +105,7 @@ public class CreateFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
         if (getArguments() != null) {
             photoFile = (File) getArguments().getSerializable(PHOTO_FILE);
             takenImage = getArguments().getParcelable(BITMAP_IMAGE);
@@ -216,6 +225,13 @@ public class CreateFragment extends Fragment {
                     ParseGeoPoint parseGeoPoint = new ParseGeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
 
                     saveMarkerToParse(title, file, parseGeoPoint);
+
+                    // adding the new marker to the local database
+                    long millis = System.currentTimeMillis();
+                    MarkerEntity newMarker = new MarkerEntity(UUID.randomUUID().toString(),
+                            millis, title, currentLocation.getLatitude(),
+                            currentLocation.getLongitude(), "https://picsum.photos/200/300", ParseUser.getCurrentUser().toString());
+                    markerViewModel.insertMarker(newMarker);
                 }
             }
         });
