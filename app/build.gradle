@@ -71,4 +71,6 @@ dependencies {
     implementation 'com.roger.catloadinglibrary:catloadinglibrary:1.0.9'
     implementation 'com.github.d-max:spots-dialog:1.1@aar'
     implementation("org.greenrobot:eventbus:3.3.1")
+    implementation "androidx.room:room-runtime:2.4.2"
+    annotationProcessor "androidx.room:room-compiler:2.4.2"
 }
