@@ -46,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "creating main activity");
         setContentView(R.layout.activity_main);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
@@ -63,9 +64,6 @@ public class MainActivity extends AppCompatActivity {
             }
             if (fragmentSavedStates.get(R.id.action_create) != null) {
                 cameraFragment.setInitialSavedState(fragmentSavedStates.get(R.id.action_create));
-            }
-            if (fragmentSavedStates.get(R.id.action_profile) != null) {
-                profileFragment.setInitialSavedState(fragmentSavedStates.get(R.id.action_profile));
             }
         }
 
@@ -95,9 +93,6 @@ public class MainActivity extends AppCompatActivity {
         }
         if (cameraFragment.isAdded()) {
             fragmentSavedStates.put(R.id.action_create, getSupportFragmentManager().saveFragmentInstanceState(cameraFragment));
-        }
-        if (profileFragment.isAdded()) {
-            fragmentSavedStates.put(R.id.action_profile, getSupportFragmentManager().saveFragmentInstanceState(profileFragment));
         }
         outState.putSerializable("fragments", fragmentSavedStates);
         super.onSaveInstanceState(outState);

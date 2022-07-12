@@ -55,6 +55,7 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         // if user is not logged in, redirect to log in page
         if (ParseUser.getCurrentUser() == null) {
             startActivity(new Intent(getContext(), LoginActivity.class));
@@ -71,6 +72,7 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
         tvUsername = view.findViewById(R.id.tvUsername);
         gridView = view.findViewById(R.id.gridView);
         logoutBtn = view.findViewById(R.id.logoutBtn);
@@ -127,8 +129,8 @@ public class ProfileFragment extends Fragment {
         logoutBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // TODO: redirect to map
                 ParseUser.logOut();
+                startActivity(new Intent(getContext(), MainActivity.class));
             }
         });
     }
