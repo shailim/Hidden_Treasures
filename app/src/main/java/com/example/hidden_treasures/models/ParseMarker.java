@@ -37,6 +37,10 @@ public class ParseMarker extends ParseObject {
         return getParseGeoPoint(LOCATION);
     }
 
+    public String getCreatedBy() {
+        return getString(CREATED_BY);
+    }
+
     public int getViewCount() {
         return (int) getNumber(VIEW_COUNT);
     }

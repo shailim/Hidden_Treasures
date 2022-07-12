@@ -24,4 +24,7 @@ public interface MarkerEntityDao {
 
     @Delete
     void delete(MarkerEntity marker);
+
+    @Query("DELETE FROM marker_entity")
+    void deleteAll();
 }

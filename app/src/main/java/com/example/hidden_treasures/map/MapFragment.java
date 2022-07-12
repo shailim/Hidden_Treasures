@@ -50,6 +50,7 @@ import com.parse.FindCallback;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
+import com.parse.ParseObject;
 import com.parse.ParseQuery;
 
 import org.json.JSONObject;
@@ -93,8 +94,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
         markerViewModel.getAllMarkers().observe(this, markers -> {
             // save markers whenever it updates
+            markerEntities.clear();
             markerEntities.addAll(markers);
-            Log.i(TAG, String.valueOf(markerEntities.size()));
+            Log.i("MarkerLiveData", String.valueOf(markerEntities.size()));
         });
 
         if (savedInstanceState != null) {
