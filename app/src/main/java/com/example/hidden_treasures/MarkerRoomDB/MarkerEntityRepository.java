@@ -17,7 +17,7 @@ public class MarkerEntityRepository {
         markerEntityDao = db.markerEntityDao();
         allMarkers = markerEntityDao.getAll();
         List<String> list = new ArrayList<>();
-        someMarkers = markerEntityDao.loadAllWithinBounds(37.4530, -122.1817, 37.4530, -122.1817, list);
+        someMarkers = markerEntityDao.loadAllWithinBounds(37.4530, -122.1817, 37.4530, -122.1817, 50);
     }
 
     LiveData<List<MarkerEntity>> getAllMarkers() {
@@ -26,8 +26,8 @@ public class MarkerEntityRepository {
 
     LiveData<List<MarkerEntity>> getWithinBounds() { return someMarkers; }
 
-    LiveData<List<MarkerEntity>> getWithinBounds(double swLat, double swLong, double neLat, double neLong, List<String> ids) {
-        return markerEntityDao.loadAllWithinBounds(swLat, swLong, neLat, neLong, ids);
+    LiveData<List<MarkerEntity>> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {
+        return markerEntityDao.loadAllWithinBounds(swLat, swLong, neLat, neLong, numMarkersToGet);
     }
 
     void insert(MarkerEntity marker) {

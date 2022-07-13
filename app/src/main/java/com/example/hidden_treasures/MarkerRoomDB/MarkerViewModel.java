@@ -25,7 +25,6 @@ public class MarkerViewModel extends AndroidViewModel {
             Log.i("ViewModel", "all markers is null");
         }
         // the default area to get the initial set of markers from if a previous state was not saved
-        List<String> list = new ArrayList<>();
         someMarkers = repository.getWithinBounds();
     }
 
@@ -39,8 +38,8 @@ public class MarkerViewModel extends AndroidViewModel {
     }
 
     // to get the next groups of markers based on location
-    public LiveData<List<MarkerEntity>> getWithinBounds(double swLat, double swLong, double neLat, double neLong, List<String> ids) {
-        return repository.getWithinBounds(swLat, swLong, neLat, neLong, ids);
+    public LiveData<List<MarkerEntity>> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {
+        return repository.getWithinBounds(swLat, swLong, neLat, neLong, numMarkersToGet);
     }
 
     public void insertMarker(MarkerEntity marker) {

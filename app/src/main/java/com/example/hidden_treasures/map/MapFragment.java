@@ -75,6 +75,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private List<Marker> removedMarkers = new ArrayList<>();
     private GoogleMap map;
     private List<Polyline> lines = new ArrayList<>();
+    private LatLngBounds areaToQuery;
 
     private LatLng lastExploredLocation = null;
     private ParseGeoPoint southwestBound = null;
@@ -175,10 +176,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public int numMarkersToGet(float zoomLevel) {
-        if (zoomLevel > 8) {
-            return 100;
+        if (zoomLevel < 10) {
+            return 50;
         } else {
-            return 100000;
+            return 10000;
         }
     }
 
@@ -187,12 +188,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private void getMarkers(int numMarkersToGet, ParseGeoPoint southwestBound, ParseGeoPoint northeastBound) {
         // TODO: get from room database from now on, and upon getting each set, update the someMarkers list in view model
         markerViewModel.getWithinBounds(southwestBound.getLatitude(),
-                southwestBound.getLongitude(), northeastBound.getLatitude(), northeastBound.getLongitude(), markerIDs).observe(this, markers -> {
-                    markerEntities.addAll(markers);
+                southwestBound.getLongitude(), northeastBound.getLatitude(), northeastBound.getLongitude(), numMarkersToGet).observe(this, markers -> {
+                    markerEntities.clear();
                     for (MarkerEntity marker : markers) {
+                        if (!markerIDs.contains(marker.objectId))
+                        markerEntities.add(marker);
                         markerIDs.add(marker.objectId);
                     }
-                    placeMarkersOnMap(markers);
+                    placeMarkersOnMap(markerEntities);
         });
     }
 
@@ -302,7 +305,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // first split screen into grid and get an array of 16 cells
         LatLngBounds[] bounds = splitIntoGrid();
         // iterate through each bound
-        Log.i(TAG, String.valueOf(bounds.length));
         for (int i = 0; i < 16; i++) {
             //find count of markers within each bound
             int count = 0;
@@ -310,18 +312,19 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 if (bounds[i].contains(marker.getPosition())) {
                     count++;
                     //if count > 5, only show the five markers, add others to list of invisible/removed
-                    if (count > 5) {
+                    if (count > 3) {
                         // add removed marker to list
                         removedMarkers.add(marker);
                         marker.setVisible(false);
+                        Log.i(TAG, "removed a marker");
                     }
                 }
             }
             // if there's more space within a cell for more markers, go through the removed markers list
             List<Marker> toBeAddedBack = new ArrayList<>();
-            if (count < 5) {
+            if (count < 3) {
                 for (Marker marker : removedMarkers) {
-                    if (count < 5) {
+                    if (count < 3) {
                         if (bounds[i].contains(marker.getPosition())) {
                             marker.setVisible(true);
 
