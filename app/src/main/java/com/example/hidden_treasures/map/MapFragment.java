@@ -2,6 +2,7 @@ package com.example.hidden_treasures.map;
 
 import static com.parse.Parse.getApplicationContext;
 
+import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -19,6 +20,7 @@ import android.view.ViewGroup;
 
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
@@ -101,7 +103,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // associating marker view model with map fragment and getting the marker view model
         markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
         // get the initial set of markers from view model
-        markerEntities.addAll(markerViewModel.getWithinBounds());
+        markerViewModel.getWithinBounds().observe(this, markers -> {
+            markerEntities.clear();
+            markerEntities.addAll(markers);
+            for (MarkerEntity marker : markers) {
+                markerIDs.add(marker.objectId);
+            }
+        });
+        markerViewModel.getAllMarkers().observe(this, markers -> {
+            Log.i(TAG, String.valueOf(markers.size()));
+        });
     }
 
     @Override
@@ -153,7 +164,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(lastExploredLocation, lastZoomLevel));
         } else {
             // set initial position of map
-            map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 10));
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 13));
         }
         // place initial set of markers on map
         placeMarkersOnMap(markerEntities);
@@ -175,29 +186,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     /* retrieves markers from database, then calls a function to place markers on map */
     private void getMarkers(int numMarkersToGet, ParseGeoPoint southwestBound, ParseGeoPoint northeastBound) {
         // TODO: get from room database from now on, and upon getting each set, update the someMarkers list in view model
-        this.southwestBound = southwestBound;
-        this.northeastBound = northeastBound;
-        ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
-        markerQuery.setLimit(numMarkersToGet);
-        // restricting markers to a rectangular bounding box
-        markerQuery.whereWithinGeoBox("location", southwestBound, northeastBound);
-        // not getting repeated markers
-        markerQuery.whereNotContainedIn("objectId", markerIDs);
-        markerQuery.findInBackground(new FindCallback<ParseMarker>() {
-            @Override
-            public void done(List<ParseMarker> objects, ParseException e) {
-                if (e == null) {
-                    for (ParseMarker marker : objects) {
-                        markerIDs.add(marker.getObjectId());
+        markerViewModel.getWithinBounds(southwestBound.getLatitude(),
+                southwestBound.getLongitude(), northeastBound.getLatitude(), northeastBound.getLongitude(), markerIDs).observe(this, markers -> {
+                    markerEntities.addAll(markers);
+                    for (MarkerEntity marker : markers) {
+                        markerIDs.add(marker.objectId);
                     }
-                    Log.i(TAG, String.valueOf(markerIDs.size()));
-                    Log.i(TAG, "got the markers");
-                    // call function to place markers on map
-                    placeMarkersOnMap(objects);
-                } else {
-                    Log.i(TAG, "Couldn't get markers");
-                }
-            }
+                    placeMarkersOnMap(markers);
         });
     }
 
@@ -207,18 +202,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             // id is used to get random images
             int id = 1;
             for (MarkerEntity object : objects) {
+                // add ID of each marker placed on map to the list
+                markerIDs.add(object.objectId);
                 // get the marker values
                 LatLng markerLocation = new LatLng(object.latitude, object.longitude);
                 // TODO: replace random images with the real media url
                 // generate random images for markers for now for the test data
                 String url = "https://picsum.photos/id/" + id + "/200/300";
 
-                //Bitmap image = getMarkerIcon(marker.getMedia());
 
                 Marker mapMarker = map.addMarker(new MarkerOptions()
                         .position(markerLocation)
                         .title(object.title));
-                //.icon(BitmapDescriptorFactory.fromBitmap(image)));
                 mapMarker.setTag(url);
                 markers.add(mapMarker);
                 id++;
@@ -246,11 +241,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     /* adds an individual newly created marker to the cluster manager */
     public void addCreatedMarker(String title, LatLng location, ParseFile media) {
-        Bitmap image = getMarkerIcon(media);
         Marker newMarker = map.addMarker(new MarkerOptions()
                 .position(location)
-                .title(title)
-                .icon(BitmapDescriptorFactory.fromBitmap(image)));
+                .title(title));
         newMarker.setTag(media.getUrl());
         Log.i(TAG, "moving camera to new marker");
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(48.8566, 2.3522), 13));
@@ -258,6 +251,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     /* Adds a click listener on markers
      * On marker click, a marker detail view opens up  */
+    @SuppressLint("PotentialBehaviorOverride")
     public void enableMarkerClicks() {
         map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override

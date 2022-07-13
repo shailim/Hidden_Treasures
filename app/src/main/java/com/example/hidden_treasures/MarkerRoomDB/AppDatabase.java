@@ -76,8 +76,9 @@ public abstract class AppDatabase extends RoomDatabase {
                         MarkerEntity marker = new MarkerEntity(id, createdAt, title, latitude, longitude, imageUrl, createdBy);
                         dao.insert(marker);
                     }
+                    Log.i("AppDatabase", "inserted all markers");
                 } catch (ParseException e) {
-                    e.printStackTrace();
+                    Log.i("AppDatabase", e.getMessage());
                 }
             });
         }
