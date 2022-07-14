@@ -315,7 +315,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     if (count > 3) {
                         // add removed marker to list
                         removedMarkers.add(marker);
-                        marker.setVisible(false);
                         Log.i(TAG, "removed a marker");
                     }
                 }
@@ -327,6 +326,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     if (count < 3) {
                         if (bounds[i].contains(marker.getPosition())) {
                             marker.setVisible(true);
+                            markers.add(marker);
 
                             // take it out from removedMarkers list later by adding it to an toBeAddedBack list
                             toBeAddedBack.add(marker);
@@ -347,6 +347,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             // remove all the extra markers
             for (Marker marker : removedMarkers) {
                 marker.setVisible(false);
+                markers.remove(marker);
             }
         }
     }
