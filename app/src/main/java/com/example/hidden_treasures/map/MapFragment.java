@@ -82,6 +82,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private ParseGeoPoint northeastBound = null;
     private float lastZoomLevel = 0;
 
+    private float previousZoomLevel = 0;
+    private LatLngBounds prevBounds = null;
+
     public MapFragment() {
         // Required empty public constructor
     }
@@ -167,6 +170,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             // set initial position of map
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 13));
         }
+        previousZoomLevel = map.getCameraPosition().zoom;
+        prevBounds = map.getProjection().getVisibleRegion().latLngBounds;
         // place initial set of markers on map
         placeMarkersOnMap(markerEntities);
         // enables any markers on the map to be clickable
@@ -185,10 +190,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     // TODO: change this function to get from local database
     /* retrieves markers from database, then calls a function to place markers on map */
-    private void getMarkers(int numMarkersToGet, ParseGeoPoint southwestBound, ParseGeoPoint northeastBound) {
+    private void getMarkers(int numMarkersToGet, LatLng southwestBound, LatLng northeastBound) {
         // TODO: get from room database from now on, and upon getting each set, update the someMarkers list in view model
-        markerViewModel.getWithinBounds(southwestBound.getLatitude(),
-                southwestBound.getLongitude(), northeastBound.getLatitude(), northeastBound.getLongitude(), numMarkersToGet).observe(this, markers -> {
+        markerViewModel.getWithinBounds(southwestBound.latitude,
+                southwestBound.longitude, northeastBound.latitude, northeastBound.longitude, numMarkersToGet).observe(this, markers -> {
                     markerEntities.clear();
                     for (MarkerEntity marker : markers) {
                         if (!markerIDs.contains(marker.objectId))
@@ -283,21 +288,32 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 Log.i(TAG, "camera is idle");
                 lastExploredLocation = map.getCameraPosition().target;
                 lastZoomLevel = map.getCameraPosition().zoom;
-                // get coordinates and zoom level of current screen bounds
-                LatLng southwest = map.getProjection().getVisibleRegion().latLngBounds.southwest;
-                LatLng northeast = map.getProjection().getVisibleRegion().latLngBounds.northeast;
-                float zoomLevel = map.getCameraPosition().zoom;
+                // if its still without previous bounds that markers were loaded from
+                if (prevBounds.contains(map.getCameraPosition().target)) {
+                    // if zoom level is different
+                    if (map.getCameraPosition().zoom != previousZoomLevel) {
+                        // get more markers and re cluster
+                        updateMap(map.getProjection().getVisibleRegion().latLngBounds, map.getCameraPosition().zoom);
+                    } else {
+                        Log.i(TAG, "not getting new markers");
+                    }
+                } else {
+                    // get more markers and re cluster
+                    updateMap(map.getProjection().getVisibleRegion().latLngBounds, map.getCameraPosition().zoom);
+                }
 
-                // create the two points needed for the rectangular bound
-                ParseGeoPoint southwestBound = new ParseGeoPoint(southwest.latitude, southwest.longitude);
-                ParseGeoPoint northeastBound = new ParseGeoPoint(northeast.latitude, northeast.longitude);
-                // get more markers within the bounds
-                getMarkers(numMarkersToGet(zoomLevel), southwestBound, northeastBound);
-
-                // re-cluster markers
-                clusterMarkers();
             }
         });
+    }
+
+    /* Gets more markers to place onto map and re clusters them */
+    public void updateMap(LatLngBounds bound, float zoom) {
+        LatLng southwest = bound.southwest;
+        LatLng northeast = bound.northeast;
+        previousZoomLevel = zoom;
+        prevBounds = bound;
+        getMarkers(numMarkersToGet(zoom), southwest, northeast);
+        clusterMarkers();
     }
 
     public void clusterMarkers() {
@@ -378,7 +394,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             } else {
                 gridCells[i] = new LatLngBounds(new LatLng(gridCells[i-1].southwest.latitude + cellHeight, gridCells[i-1].southwest.longitude), new LatLng(gridCells[i-1].northeast.latitude + cellHeight, gridCells[i-1].northeast.longitude));
             }
-            Log.i(TAG, gridCells[i].southwest + " " + gridCells[i].northeast);
         }
         return gridCells;
     }
