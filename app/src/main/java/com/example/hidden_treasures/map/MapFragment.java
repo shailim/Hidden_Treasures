@@ -31,6 +31,7 @@ import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.example.hidden_treasures.util.BitmapFormat;
+import com.example.hidden_treasures.util.GeoHash;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -67,6 +68,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
@@ -125,6 +127,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         markerViewModel.getAllMarkers().observe(this, markers -> {
             Log.i(TAG, String.valueOf(markers.size()));
         });
+
+        double lat = 37.4530;
+        double longi = -122.1817;
+        GeoHash geohashutil = new GeoHash();
+        String geohash = geohashutil.encode(lat, longi, 7);
+        Log.i(TAG, geohash);
+        LatLngBounds bounds = geohashutil.bounds(geohash);
+        Log.i(TAG, bounds.southwest + " " + bounds.northeast);
     }
 
     @Override
