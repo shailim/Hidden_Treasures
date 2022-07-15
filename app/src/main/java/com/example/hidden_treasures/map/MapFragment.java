@@ -84,15 +84,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private List<Marker> removedMarkers = new ArrayList<>();
     private GoogleMap map;
     private List<Polyline> lines = new ArrayList<>();
-    private LatLngBounds areaToQuery;
 
     private LatLng lastExploredLocation = null;
     private ParseGeoPoint southwestBound = null;
     private ParseGeoPoint northeastBound = null;
     private float lastZoomLevel = 0;
 
-    private float previousZoomLevel = 0;
-    private LatLngBounds prevBounds = null;
+    private GeoHash geohashutil = new GeoHash();
+    private String curGeohash;
+    private String[] adjacentGeohash;
 
     public MapFragment() {
         // Required empty public constructor
@@ -128,13 +128,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             Log.i(TAG, String.valueOf(markers.size()));
         });
 
-        double lat = 37.4530;
-        double longi = -122.1817;
-        GeoHash geohashutil = new GeoHash();
-        String geohash = geohashutil.encode(lat, longi, 7);
-        Log.i(TAG, geohash);
-        LatLngBounds bounds = geohashutil.bounds(geohash);
-        Log.i(TAG, bounds.southwest + " " + bounds.northeast);
+        // getting the initial position's geohash and adjacent cells
+        curGeohash = geohashutil.encode(37.4530, -122.1817, 7);
+        adjacentGeohash = geohashutil.neighbours(curGeohash);
     }
 
     @Override
@@ -188,8 +184,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             // set initial position of map
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 13));
         }
-        previousZoomLevel = map.getCameraPosition().zoom;
-        prevBounds = map.getProjection().getVisibleRegion().latLngBounds;
         // place initial set of markers on map
         placeMarkersOnMap(markerEntities);
         // enables any markers on the map to be clickable
@@ -306,18 +300,39 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             Log.i(TAG, "camera is idle: " + i);
             lastExploredLocation = map.getCameraPosition().target;
             lastZoomLevel = map.getCameraPosition().zoom;
-            // if its still without previous bounds that markers were loaded from
-            if (prevBounds.contains(map.getCameraPosition().target)) {
-                // if zoom level is different
-                if (map.getCameraPosition().zoom != previousZoomLevel) {
-                    // get more markers and re cluster
-                    updateMap(map.getProjection().getVisibleRegion().latLngBounds, map.getCameraPosition().zoom);
-                } else {
-                    Log.i(TAG, "not getting new markers");
+            // if the camera position is outside the current center bound...
+            // if marker latlng is inside the bounds of a neighbor, do something different for each one
+            if (!geohashutil.bounds(curGeohash).contains(lastExploredLocation)) {
+                for (int i = 0; i < adjacentGeohash.length; i++) {
+                    if (geohashutil.bounds(adjacentGeohash[i]).contains(lastExploredLocation)) {
+                        switch (i) {
+                            case 0:
+                                // n: get the three cells above it
+                                break;
+                            case 1:
+                                // ne: get the five cells around it
+                                break;
+                            case 2:
+                                // e: get the three cells to the right
+                                break;
+                            case 3:
+                                // se: get the five cells around
+                                break;
+                            case 4:
+                                // s: get the three below
+                                break;
+                            case 5:
+                                // sw: get the five around
+                                break;
+                            case 6:
+                                // w: get the three cells to the left
+                                break;
+                            case 7:
+                                // nw: get the five cells around
+                                break;
+                        }
+                    }
                 }
-            } else {
-                // get more markers and re cluster
-                updateMap(map.getProjection().getVisibleRegion().latLngBounds, map.getCameraPosition().zoom);
             }
         }
     };
@@ -340,8 +355,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void updateMap(LatLngBounds bound, float zoom) {
         LatLng southwest = bound.southwest;
         LatLng northeast = bound.northeast;
-        previousZoomLevel = zoom;
-        prevBounds = bound;
         getMarkers(numMarkersToGet(zoom), southwest, northeast);
     }
 

@@ -94,4 +94,59 @@ public class GeoHash {
         return bounds;
     }
 
+
+    // returns the geohash for a neighboring cell
+    // directions are : 0 - n, 1 - e, 2 - s, 3 - w
+    public String adjacent(String geohash, int direction) {
+        geohash = geohash.toLowerCase();
+
+        final String[][] neighbour = new String[4][2];
+        neighbour[0][0] = "p0r21436x8zb9dcf5h7kjnmqesgutwvy";
+        neighbour[0][1] = "bc01fg45238967deuvhjyznpkmstqrwx";
+        neighbour[1][0] = "14365h7k9dcfesgujnmqp0r2twvyx8zb";
+        neighbour[1][1] = "238967debc01fg45kmstqrwxuvhjyznp";
+        neighbour[2][0] = "bc01fg45238967deuvhjyznpkmstqrwx";
+        neighbour[2][1] = "p0r21436x8zb9dcf5h7kjnmqesgutwvy";
+        neighbour[3][0] = "238967debc01fg45kmstqrwxuvhjyznp";
+        neighbour[3][1] = "14365h7k9dcfesgujnmqp0r2twvyx8zb";
+
+        final String[][] border = new String[4][2];
+        border[0][0] = "prxz";
+        border[0][1] = "bcfguvyz";
+        border[1][0] = "028b";
+        border[1][1] = "0145hjnp";
+        border[2][0] = "bcfguvyz";
+        border[2][1] = "prxz";
+        border[3][0] = "0145hjnp";
+        border[3][1] = "028b";
+
+
+        char lastCh = geohash.charAt(geohash.length()-1);    // last character of hash
+        String parent = geohash.substring(0, geohash.length()-1); // hash without last character
+
+        int type = geohash.length() % 2;
+
+        // check for edge-cases which don't share common prefix
+        if (border[direction][type].indexOf(lastCh) != -1 && parent.length() > 0) {
+            parent = adjacent(parent, direction);
+        }
+
+        // append letter for direction to parent
+        return parent + base32.charAt(neighbour[direction][type].indexOf(lastCh));
+    }
+
+    public String[] neighbours(String geohash) {
+        // neighbors array is [n, ne, e, se, s, sw, w, nw]
+        String[] neighbours = new String[8];
+        neighbours[0] = adjacent(geohash, 0);
+        neighbours[1] = adjacent(neighbours[0], 1);
+        neighbours[2] = adjacent(geohash, 1);
+        neighbours[3] = adjacent(neighbours[2], 2);
+        neighbours[4] = adjacent(geohash, 2);
+        neighbours[5] = adjacent(neighbours[4], 3);
+        neighbours[6] = adjacent(geohash, 3);
+        neighbours[7] = adjacent(neighbours[6], 0);
+        return neighbours;
+    }
+
 }
