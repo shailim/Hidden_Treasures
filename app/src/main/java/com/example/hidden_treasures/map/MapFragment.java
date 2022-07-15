@@ -8,11 +8,13 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
+import android.os.AsyncTask;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +25,7 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
 import com.example.hidden_treasures.models.ParseMarker;
@@ -60,16 +63,20 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public static final String TAG = "MapFragment";
 
+    private Handler handler;
+
     private MarkerViewModel markerViewModel;
 
-    private List<String> markerIDs = new ArrayList<>();
+    private Set<String> markerIDs = new HashSet<>();
     private List<Marker> markers = new ArrayList<>();
     private List<MarkerEntity> markerEntities = new ArrayList<>();
     private List<Marker> removedMarkers = new ArrayList<>();
@@ -96,6 +103,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        handler = new Handler();
         if (savedInstanceState != null) {
             Log.i(TAG, "getting saved values");
             // get values from last query for markers
@@ -188,24 +196,29 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
+
     // TODO: change this function to get from local database
     /* retrieves markers from database, then calls a function to place markers on map */
     private void getMarkers(int numMarkersToGet, LatLng southwestBound, LatLng northeastBound) {
+        Log.i(TAG, "startin get markers");
         // TODO: get from room database from now on, and upon getting each set, update the someMarkers list in view model
         markerViewModel.getWithinBounds(southwestBound.latitude,
-                southwestBound.longitude, northeastBound.latitude, northeastBound.longitude, numMarkersToGet).observe(this, markers -> {
+                        southwestBound.longitude, northeastBound.latitude, northeastBound.longitude, numMarkersToGet).observe(MapFragment.this, markers -> {
                     markerEntities.clear();
                     for (MarkerEntity marker : markers) {
-                        if (!markerIDs.contains(marker.objectId))
-                        markerEntities.add(marker);
-                        markerIDs.add(marker.objectId);
+                        if (!markerIDs.contains(marker.objectId)) {
+                            markerEntities.add(marker);
+                            markerIDs.add(marker.objectId);
+                        }
                     }
+                    Log.i(TAG, "finished get markers");
                     placeMarkersOnMap(markerEntities);
-        });
+                });
     }
 
     /* Using MarkerEntity instead of ParseMarker, Creates new markers and places them on the map */
     private void placeMarkersOnMap(List<MarkerEntity> objects) {
+        Log.i(TAG, "starting place markers");
         if (objects != null && objects.size() > 0) {
             // id is used to get random images
             int id = 1;
@@ -214,19 +227,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 markerIDs.add(object.objectId);
                 // get the marker values
                 LatLng markerLocation = new LatLng(object.latitude, object.longitude);
-                // TODO: replace random images with the real media url
-                // generate random images for markers for now for the test data
-                String url = "https://picsum.photos/id/" + id + "/200/300";
-
 
                 Marker mapMarker = map.addMarker(new MarkerOptions()
                         .position(markerLocation)
                         .title(object.title));
-                mapMarker.setTag(url);
+                mapMarker.setTag(object.imageUrl);
                 markers.add(mapMarker);
                 id++;
             }
-            Log.i(TAG, "placed markers on map");
+            Log.i(TAG, "finished place markers");
+            clusterMarkers();
         }
     }
 
@@ -279,29 +289,39 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
+    int i = 0;
+    Runnable r = new Runnable() {
+        @Override
+        public void run() {
+            Log.i(TAG, "camera is idle: " + i);
+            lastExploredLocation = map.getCameraPosition().target;
+            lastZoomLevel = map.getCameraPosition().zoom;
+            // if its still without previous bounds that markers were loaded from
+            if (prevBounds.contains(map.getCameraPosition().target)) {
+                // if zoom level is different
+                if (map.getCameraPosition().zoom != previousZoomLevel) {
+                    // get more markers and re cluster
+                    updateMap(map.getProjection().getVisibleRegion().latLngBounds, map.getCameraPosition().zoom);
+                } else {
+                    Log.i(TAG, "not getting new markers");
+                }
+            } else {
+                // get more markers and re cluster
+                updateMap(map.getProjection().getVisibleRegion().latLngBounds, map.getCameraPosition().zoom);
+            }
+        }
+    };
 
     /* Adds a listener to track when camera is idle on map */
     public void watchCameraIdle() {
         map.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
             @Override
             public void onCameraIdle() {
-                Log.i(TAG, "camera is idle");
-                lastExploredLocation = map.getCameraPosition().target;
-                lastZoomLevel = map.getCameraPosition().zoom;
-                // if its still without previous bounds that markers were loaded from
-                if (prevBounds.contains(map.getCameraPosition().target)) {
-                    // if zoom level is different
-                    if (map.getCameraPosition().zoom != previousZoomLevel) {
-                        // get more markers and re cluster
-                        updateMap(map.getProjection().getVisibleRegion().latLngBounds, map.getCameraPosition().zoom);
-                    } else {
-                        Log.i(TAG, "not getting new markers");
-                    }
-                } else {
-                    // get more markers and re cluster
-                    updateMap(map.getProjection().getVisibleRegion().latLngBounds, map.getCameraPosition().zoom);
-                }
-
+                i++;
+                // remove runnable from the queue (hasn't been started yet)
+                handler.removeCallbacks(r);
+                // add runnable to queue and run only after the set amount of time
+                handler.postDelayed(r, 1000);
             }
         });
     }
@@ -313,7 +333,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         previousZoomLevel = zoom;
         prevBounds = bound;
         getMarkers(numMarkersToGet(zoom), southwest, northeast);
-        clusterMarkers();
     }
 
     public void clusterMarkers() {

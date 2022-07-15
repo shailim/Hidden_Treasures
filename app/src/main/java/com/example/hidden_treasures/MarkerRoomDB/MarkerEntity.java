@@ -35,7 +35,10 @@ public class MarkerEntity {
     @ColumnInfo(name = "created_by")
     public String createdBy;
 
-    public MarkerEntity(String objectId, long createdAt, String title, double latitude, double longitude, String imageUrl, String createdBy) {
+    @ColumnInfo(name = "view_count")
+    public int view_count;
+
+    public MarkerEntity(String objectId, long createdAt, String title, double latitude, double longitude, String imageUrl, String createdBy, int view_count) {
         this.objectId = objectId;
         this.createdAt = createdAt;
         this.title = title;
@@ -43,6 +46,7 @@ public class MarkerEntity {
         this.longitude = longitude;
         this.imageUrl = imageUrl;
         this.createdBy = createdBy;
+        this.view_count = view_count;
     }
 
 }

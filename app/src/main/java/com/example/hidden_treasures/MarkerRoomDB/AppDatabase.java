@@ -73,7 +73,8 @@ public abstract class AppDatabase extends RoomDatabase {
                         double longitude = object.getLocation().getLongitude();
                         String imageUrl = object.getMedia().getUrl();
                         String createdBy = object.getCreatedBy();
-                        MarkerEntity marker = new MarkerEntity(id, createdAt, title, latitude, longitude, imageUrl, createdBy);
+                        int viewCount = object.getViewCount();
+                        MarkerEntity marker = new MarkerEntity(id, createdAt, title, latitude, longitude, imageUrl, createdBy, viewCount);
                         dao.insert(marker);
                     }
                     Log.i("AppDatabase", "inserted all markers");

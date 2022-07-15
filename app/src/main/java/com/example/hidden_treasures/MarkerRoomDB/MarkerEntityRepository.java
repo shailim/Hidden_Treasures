@@ -5,6 +5,7 @@ import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 
+import com.example.hidden_treasures.App;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.parse.ParseException;
 import com.parse.ParseQuery;
@@ -22,7 +23,6 @@ public class MarkerEntityRepository {
         markerEntityDao = db.markerEntityDao();
         allMarkers = markerEntityDao.getAll();
         someMarkers = markerEntityDao.loadAllWithinBounds(37.4530, -122.1817, 37.4530, -122.1817, 50);
-        refreshData();
     }
 
     LiveData<List<MarkerEntity>> getAllMarkers() {
@@ -41,14 +41,19 @@ public class MarkerEntityRepository {
         });
     }
 
-    private void refreshData() {
+    public void refreshData() {
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            markerEntityDao.deleteAll();
+            //markerEntityDao.deleteAll();
+            List<String> markerIds = new ArrayList<>();
+            for (MarkerEntity marker : allMarkers.getValue()) {
+                markerIds.add(marker.objectId);
+            }
 
             // Get all markers from Parse
             ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
             // TODO: find out how to not set a limit at all
             markerQuery.setLimit(10000);
+            markerQuery.whereNotContainedIn("ObjectId", markerIds);
             try {
                 List<ParseMarker> objects = markerQuery.find();
                 for (ParseMarker object : objects) {
@@ -59,11 +64,12 @@ public class MarkerEntityRepository {
                     double longitude = object.getLocation().getLongitude();
                     String imageUrl = object.getMedia().getUrl();
                     String createdBy = object.getCreatedBy();
-                    MarkerEntity marker = new MarkerEntity(id, createdAt, title, latitude, longitude, imageUrl, createdBy);
+                    int viewCount = object.getViewCount();
+                    MarkerEntity marker = new MarkerEntity(id, createdAt, title, latitude, longitude, imageUrl, createdBy, viewCount);
                     // insert into Room database
                     markerEntityDao.insert(marker);
                 }
-                Log.i("Repository", "inserted markers from parse");
+                Log.i("Repository", "inserted " + objects.size() + " from parse");
             } catch (ParseException e) {
                 Log.i("Repository", e.getMessage());
             }

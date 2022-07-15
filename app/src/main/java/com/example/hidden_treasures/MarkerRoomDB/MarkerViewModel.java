@@ -26,6 +26,7 @@ public class MarkerViewModel extends AndroidViewModel {
         }
         // the default area to get the initial set of markers from if a previous state was not saved
         someMarkers = repository.getWithinBounds();
+        //repository.refreshData();
     }
 
     public LiveData<List<MarkerEntity>> getAllMarkers() { return allMarkers; }
