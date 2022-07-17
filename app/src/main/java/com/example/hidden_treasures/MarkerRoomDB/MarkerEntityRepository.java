@@ -7,6 +7,8 @@ import androidx.lifecycle.LiveData;
 
 import com.example.hidden_treasures.App;
 import com.example.hidden_treasures.models.ParseMarker;
+import com.example.hidden_treasures.util.GeoHash;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.parse.ParseException;
 import com.parse.ParseQuery;
 
@@ -22,7 +24,9 @@ public class MarkerEntityRepository {
         AppDatabase db = AppDatabase.getDatabase(application);
         markerEntityDao = db.markerEntityDao();
         allMarkers = markerEntityDao.getAll();
-        someMarkers = markerEntityDao.loadAllWithinBounds(37.4530, -122.1817, 37.4530, -122.1817, 50);
+        String geohash = GeoHash.encode(37.4530, -122.1817, 6);
+        LatLngBounds bound = GeoHash.bounds(geohash);
+        someMarkers = markerEntityDao.loadAllWithinBounds(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, 50);
     }
 
     LiveData<List<MarkerEntity>> getAllMarkers() {

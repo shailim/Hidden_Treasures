@@ -5,11 +5,11 @@ import com.google.android.gms.maps.model.LatLngBounds;
 
 public class GeoHash {
 
-    private final String base32 = "0123456789bcdefghjkmnpqrstuvwxyz";
+    private static final String base32 = "0123456789bcdefghjkmnpqrstuvwxyz";
 
 
     /* Gets the geohash of a point with it's latitude and longitude and curent zoom level  */
-    public String encode(double latitude, double longitude, float zoomLevel) {
+    public static String encode(double latitude, double longitude, float precision) {
 
         int index = 0; // index into base32 map
         int bit = 0; // each char holds 5 bits
@@ -20,7 +20,7 @@ public class GeoHash {
         double longMin = -180, longMax = 180;
 
         // the length of the geohash is the precision (zoom level)
-        while (geohash.length() < zoomLevel) {
+        while (geohash.length() < precision) {
             // alternate between dividing latitude and longitude
             if (evenBit) {
                 // divide E-W longitude
@@ -56,7 +56,7 @@ public class GeoHash {
     }
 
 
-    public LatLngBounds bounds(String geohash) {
+    public static LatLngBounds bounds(String geohash) {
         boolean evenBit = true;
         double latMin =  -90, latMax =  90;
         double longMin = -180, longMax = 180;
@@ -97,7 +97,7 @@ public class GeoHash {
 
     // returns the geohash for a neighboring cell
     // directions are : 0 - n, 1 - e, 2 - s, 3 - w
-    public String adjacent(String geohash, int direction) {
+    public static String adjacent(String geohash, int direction) {
         geohash = geohash.toLowerCase();
 
         final String[][] neighbour = new String[4][2];
@@ -135,7 +135,7 @@ public class GeoHash {
         return parent + base32.charAt(neighbour[direction][type].indexOf(lastCh));
     }
 
-    public String[] neighbours(String geohash) {
+    public static String[] neighbours(String geohash) {
         // neighbors array is [n, ne, e, se, s, sw, w, nw]
         String[] neighbours = new String[8];
         neighbours[0] = adjacent(geohash, 0);

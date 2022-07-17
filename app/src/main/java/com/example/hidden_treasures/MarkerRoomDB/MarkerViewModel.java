@@ -14,16 +14,14 @@ public class MarkerViewModel extends AndroidViewModel {
 
     private MarkerEntityRepository repository;
 
-    private final LiveData<List<MarkerEntity>> allMarkers;
+    private LiveData<List<MarkerEntity>> allMarkers;
     private final LiveData<List<MarkerEntity>> someMarkers;
 
     public MarkerViewModel(@NonNull Application application) {
         super(application);
         repository = new MarkerEntityRepository(application);
         allMarkers = repository.getAllMarkers();
-        if (allMarkers.getValue() == null) {
-            Log.i("ViewModel", "all markers is null");
-        }
+
         // the default area to get the initial set of markers from if a previous state was not saved
         someMarkers = repository.getWithinBounds();
         //repository.refreshData();
