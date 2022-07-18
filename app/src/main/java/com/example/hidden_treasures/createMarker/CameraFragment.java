@@ -76,10 +76,6 @@ public class CameraFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // if user is not logged in, redirect to log in page
-        if (ParseUser.getCurrentUser() == null) {
-            startActivity(new Intent(getContext(), LoginActivity.class));
-        }
     }
 
     @Override

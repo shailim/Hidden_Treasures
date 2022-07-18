@@ -55,11 +55,6 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // if user is not logged in, redirect to log in page
-        if (ParseUser.getCurrentUser() == null) {
-            startActivity(new Intent(getContext(), LoginActivity.class));
-        }
     }
 
     @Override
@@ -129,8 +124,8 @@ public class ProfileFragment extends Fragment {
         logoutBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ParseUser.logOut();
-                startActivity(new Intent(getContext(), MainActivity.class));
+                ParseUser.logOutInBackground();
+                startActivity(new Intent(getContext(), LoginActivity.class));
             }
         });
     }

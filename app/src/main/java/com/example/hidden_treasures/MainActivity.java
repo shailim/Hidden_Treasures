@@ -34,11 +34,12 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
 
-    private HashMap<Integer, Fragment.SavedState> fragmentSavedStates = new HashMap<Integer, Fragment.SavedState>();
 
     private MapFragment mapFragment;
     private CameraFragment cameraFragment;
     private ProfileFragment profileFragment;
+
+    private String curFragment;
 
     // find the bottom navigation view
     public BottomNavigationView bottomNavigationView;
@@ -46,7 +47,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i(TAG, "creating main activity");
         setContentView(R.layout.activity_main);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
@@ -56,20 +56,24 @@ public class MainActivity extends AppCompatActivity {
         cameraFragment = CameraFragment.newInstance();
         profileFragment = ProfileFragment.newInstance();
 
-        // get previous fragment states
-        if (savedInstanceState != null) {
-            fragmentSavedStates = (HashMap<Integer, Fragment.SavedState>) savedInstanceState.getSerializable("fragments");
-            if (fragmentSavedStates.get(R.id.action_map) != null) {
-                mapFragment.setInitialSavedState(fragmentSavedStates.get(R.id.action_map));
-            }
-            if (fragmentSavedStates.get(R.id.action_create) != null) {
-                cameraFragment.setInitialSavedState(fragmentSavedStates.get(R.id.action_create));
-            }
-        }
-
         handleBottomNavSelection();
-        // default tab is map
-        bottomNavigationView.setSelectedItemId(R.id.action_map);
+
+        if (savedInstanceState != null) {
+            switch(savedInstanceState.getString("curFragment")) {
+                case "camera":
+                    bottomNavigationView.setSelectedItemId(R.id.action_create);
+                    break;
+                case "profile":
+                    bottomNavigationView.setSelectedItemId(R.id.action_profile);
+                    break;
+                default:
+                    bottomNavigationView.setSelectedItemId(R.id.action_map);
+                    break;
+            }
+        } else {
+            // default tab is map
+            bottomNavigationView.setSelectedItemId(R.id.action_map);
+        }
     }
 
     @Override
@@ -88,13 +92,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
-        if (mapFragment.isAdded()) {
-            fragmentSavedStates.put(R.id.action_map, getSupportFragmentManager().saveFragmentInstanceState(mapFragment));
-        }
-        if (cameraFragment.isAdded()) {
-            fragmentSavedStates.put(R.id.action_create, getSupportFragmentManager().saveFragmentInstanceState(cameraFragment));
-        }
-        outState.putSerializable("fragments", fragmentSavedStates);
+        outState.putString("curFragment", curFragment);
         super.onSaveInstanceState(outState);
     }
 
@@ -106,12 +104,15 @@ public class MainActivity extends AppCompatActivity {
                     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                         switch (item.getItemId()) {
                             case R.id.action_create:
+                                curFragment = "camera";
                                 displayCameraFragment();
                                 break;
                             case R.id.action_profile:
+                                curFragment = "profile";
                                 displayProfileFragment();
                                 break;
                             default:
+                                curFragment = "map";
                                 displayMapFragment();
                                 break;
                         }
@@ -182,10 +183,10 @@ public class MainActivity extends AppCompatActivity {
                 R.anim.fade_out  // exit
         );
         if (cameraFragment.isAdded()) { // if the fragment is already in container
-            ft.remove(cameraFragment);
-            cameraFragment = CameraFragment.newInstance();
-            ft.add(R.id.fragmentContainer, cameraFragment);
-            //ft.show(cameraFragment);
+//            ft.remove(cameraFragment);
+//            cameraFragment = CameraFragment.newInstance();
+//            ft.add(R.id.fragmentContainer, cameraFragment);
+            ft.show(cameraFragment);
         } else { // fragment needs to be added to frame container
             ft.add(R.id.fragmentContainer, cameraFragment);
         }

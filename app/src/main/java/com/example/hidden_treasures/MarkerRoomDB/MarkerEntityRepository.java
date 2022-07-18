@@ -25,7 +25,7 @@ public class MarkerEntityRepository {
         AppDatabase db = AppDatabase.getDatabase(application);
         markerEntityDao = db.markerEntityDao();
         allMarkers = markerEntityDao.getAll();
-        refreshData();
+        //refreshData();
         String geohash = GeoHash.encode(37.4530, -122.1817, 6);
         LatLngBounds bound = GeoHash.bounds(geohash);
         someMarkers = markerEntityDao.loadAllWithinBounds(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, 50);

@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.example.hidden_treasures.MainActivity;
 import com.example.hidden_treasures.R;
@@ -55,7 +56,7 @@ public class LoginActivity extends AppCompatActivity {
                             i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                             startActivity(i);
                         } else {
-                            Log.e(TAG, "Unable to log in");
+                            Toast.makeText(LoginActivity.this, "Unable to log in", Toast.LENGTH_SHORT).show();
                         }
                     }
                 });

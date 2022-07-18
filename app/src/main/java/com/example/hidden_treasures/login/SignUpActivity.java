@@ -57,7 +57,7 @@ public class SignUpActivity extends AppCompatActivity {
                             // redirect to login activity after saving user
                             startActivity(new Intent(SignUpActivity.this, LoginActivity.class));
                         } else {
-                            Log.e(TAG, "Unable to create account");
+                            Toast.makeText(SignUpActivity.this, "Unable to create account", Toast.LENGTH_SHORT).show();
                             e.printStackTrace();
                         }
                     }

@@ -86,8 +86,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap map;
 
     private LatLng lastExploredLocation = null;
-    private ParseGeoPoint southwestBound = null;
-    private ParseGeoPoint northeastBound = null;
     private float lastZoomLevel = 0;
     private float lastZoomIn = 0;
 
@@ -107,11 +105,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         super.onCreate(savedInstanceState);
         handler = new Handler();
         if (savedInstanceState != null) {
-            Log.i(TAG, "getting saved values");
-            // get values from last query for markers
             lastExploredLocation = savedInstanceState.getParcelable("lastExploredLocation");
-            southwestBound = savedInstanceState.getParcelable("southwestBound");
-            northeastBound = savedInstanceState.getParcelable("northeastBound");
             lastZoomLevel = savedInstanceState.getFloat("lastZoomLevel");
         }
         // associating marker view model with map fragment and getting the marker view model
@@ -154,8 +148,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         Log.i(TAG, "on save instance being called");
         // save values for the last query for markers
         outState.putParcelable("lastExploredLocation", lastExploredLocation);
-        outState.putParcelable("southwestBound", southwestBound);
-        outState.putParcelable("northeastBound", northeastBound);
         outState.putFloat("lastZoomLevel", lastZoomLevel);
         super.onSaveInstanceState(outState);
     }
