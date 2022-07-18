@@ -8,6 +8,7 @@ import com.parse.ParseUser;
 
 @ParseClassName("ParseMarker")
 public class ParseMarker extends ParseObject {
+    public static final String ROOMID = "roomId";
     public static final String MEDIA = "media";
     public static final String TITLE = "title";
     public static final String LOCATION = "location";
@@ -17,7 +18,8 @@ public class ParseMarker extends ParseObject {
 
     public ParseMarker() {}
 
-    public ParseMarker(String title, ParseFile media, ParseGeoPoint location) {
+    public ParseMarker(String id, String title, ParseFile media, ParseGeoPoint location) {
+        put(ROOMID, id);
         put(TITLE, title);
         if (media != null) {
             put(MEDIA, media);
@@ -25,6 +27,8 @@ public class ParseMarker extends ParseObject {
         put(LOCATION, location);
         put(CREATED_BY, ParseUser.getCurrentUser());
     }
+
+    public String getRoomid() { return getString(ROOMID); }
 
     public ParseFile getMedia() {
         return getParseFile(MEDIA);

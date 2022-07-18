@@ -13,6 +13,7 @@ import com.parse.ParseException;
 import com.parse.ParseQuery;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class MarkerEntityRepository {
@@ -24,6 +25,7 @@ public class MarkerEntityRepository {
         AppDatabase db = AppDatabase.getDatabase(application);
         markerEntityDao = db.markerEntityDao();
         allMarkers = markerEntityDao.getAll();
+        refreshData();
         String geohash = GeoHash.encode(37.4530, -122.1817, 6);
         LatLngBounds bound = GeoHash.bounds(geohash);
         someMarkers = markerEntityDao.loadAllWithinBounds(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, 50);
@@ -65,23 +67,25 @@ public class MarkerEntityRepository {
     }
 
     public void refreshData() {
+
+        // get all markers from parse that were uploaded after the last time on app and at most 24 hours before
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            //markerEntityDao.deleteAll();
-            List<String> markerIds = new ArrayList<>();
-            for (MarkerEntity marker : allMarkers.getValue()) {
-                markerIds.add(marker.objectId);
-            }
 
             // Get all markers from Parse
             ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
             // TODO: find out how to not set a limit at all
             markerQuery.setLimit(10000);
-            markerQuery.whereNotContainedIn("ObjectId", markerIds);
+            // get markers greater than when the app was last opened
+            Log.i("Repository", "last opened: " + AppDatabase.lastOpened);
+            markerQuery.whereGreaterThanOrEqualTo("time", AppDatabase.lastOpened);
+            long last24hours = System.currentTimeMillis() - 24 * 3600000;
+            // also only get markers created in the last 24 hours
+            markerQuery.whereGreaterThanOrEqualTo("time", last24hours);
             try {
                 List<ParseMarker> objects = markerQuery.find();
                 for (ParseMarker object : objects) {
                     String title = object.getTitle();
-                    String id = object.getObjectId();
+                    String id = object.getRoomid();
                     long createdAt = object.getCreatedAt().getTime();
                     double latitude = object.getLocation().getLatitude();
                     double longitude = object.getLocation().getLongitude();
@@ -97,6 +101,7 @@ public class MarkerEntityRepository {
             } catch (ParseException e) {
                 Log.i("Repository", e.getMessage());
             }
+            AppDatabase.lastOpened = System.currentTimeMillis();
         });
     }
 }

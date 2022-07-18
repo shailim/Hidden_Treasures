@@ -73,7 +73,7 @@ public class GenerateTestData {
                 String title = object.getString("toponymName");
 
                 // create a new parse marker object with all that
-                ParseMarker newMarker = new ParseMarker(title, image, geoPoint);
+                ParseMarker newMarker = new ParseMarker("", title, image, geoPoint);
 
                 // add it to the list
                 sampleData.add(newMarker);
@@ -81,7 +81,7 @@ public class GenerateTestData {
                     for (int j = 1; j < numMarkersToMake; j++) {
                         int randomNum = (int) (Math.random() * -10 + 5);
                         ParseGeoPoint geoPoint2 = new ParseGeoPoint(latitude + randomNum, longitude + randomNum);
-                        newMarker = new ParseMarker(title, image, geoPoint2);
+                        newMarker = new ParseMarker("", title, image, geoPoint2);
                         sampleData.add(newMarker);
                     }
                     numMarkersToMake--;

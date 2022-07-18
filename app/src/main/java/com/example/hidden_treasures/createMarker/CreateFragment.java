@@ -36,6 +36,7 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.parse.ParseDecoder;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
@@ -221,14 +222,16 @@ public class CreateFragment extends Fragment {
                 } else {
                     // get the values for marker
                     String title = etTitle.getText().toString();
+                    long millis = System.currentTimeMillis();
+                    String id = UUID.randomUUID().toString();
                     ParseFile file = new ParseFile(photoFile);
                     ParseGeoPoint parseGeoPoint = new ParseGeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
 
-                    saveMarkerToParse(title, file, parseGeoPoint);
+
+                    saveMarkerToParse(id, title, file, parseGeoPoint);
 
                     // adding the new marker to the local database
-                    long millis = System.currentTimeMillis();
-                    MarkerEntity newMarker = new MarkerEntity(UUID.randomUUID().toString(),
+                    MarkerEntity newMarker = new MarkerEntity(id,
                             millis, title, currentLocation.getLatitude(),
                             currentLocation.getLongitude(), "https://picsum.photos/200/300", ParseUser.getCurrentUser().toString(), 0, 0);
                     markerViewModel.insertMarker(newMarker);
@@ -238,9 +241,9 @@ public class CreateFragment extends Fragment {
     }
 
     /* Uploads markers to database in Parse */
-    private void saveMarkerToParse(String title, ParseFile file, ParseGeoPoint parseGeoPoint) {
+    private void saveMarkerToParse(String id, String title, ParseFile file, ParseGeoPoint parseGeoPoint) {
         // create a new ParseMarker object
-        ParseMarker parseMarker = new ParseMarker(title, file, parseGeoPoint);
+        ParseMarker parseMarker = new ParseMarker(id, title, file, parseGeoPoint);
 
         // call the async query to save marker
         parseMarker.saveInBackground(new SaveCallback() {

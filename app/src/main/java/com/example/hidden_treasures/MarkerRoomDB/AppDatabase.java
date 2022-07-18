@@ -32,6 +32,8 @@ public abstract class AppDatabase extends RoomDatabase {
     public static final ExecutorService databaseWriteExecutor =
             Executors.newFixedThreadPool(NUMBER_OF_THREADS);
 
+    public static volatile long lastOpened;
+
     // to get the room database instance
     public static AppDatabase getDatabase(final Context context) {
         // create a new room database instance if it doesn't already exist
@@ -42,6 +44,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     AppDatabase.class, "app_database")
                             .addCallback(roomDatabaseCallback)
                             .build();
+                    lastOpened = System.currentTimeMillis();
                 }
             }
         }
@@ -67,7 +70,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     List<ParseMarker> objects = markerQuery.find();
                     for (ParseMarker object : objects) {
                         String title = object.getTitle();
-                        String id = object.getObjectId();
+                        String id = object.getRoomid();
                         long createdAt = object.getCreatedAt().getTime();
                         double latitude = object.getLocation().getLatitude();
                         double longitude = object.getLocation().getLongitude();
