@@ -64,6 +64,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -83,7 +84,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private List<MarkerEntity> markerEntities = new ArrayList<>();
     private List<Marker> removedMarkers = new ArrayList<>();
     private GoogleMap map;
-    private List<Polyline> lines = new ArrayList<>();
 
     private LatLng lastExploredLocation = null;
     private ParseGeoPoint southwestBound = null;
@@ -121,9 +121,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             markerEntities.clear();
             markerEntities.addAll(markers);
         });
-//        markerViewModel.getAllMarkers().observe(this, markers -> {
-//            Log.i(TAG, String.valueOf(markers.size()));
-//        });
 
         // getting the initial position's geohash and adjacent cells
         curGeohash = GeoHash.encode(37.4530, -122.1817, 6);
@@ -252,7 +249,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 mapMarker.setTag(object.imageUrl);
                 markers.add(mapMarker);
             }
-            clusterMarkers();
         }
     }
 

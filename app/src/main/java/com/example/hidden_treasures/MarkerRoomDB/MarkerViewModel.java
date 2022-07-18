@@ -41,6 +41,12 @@ public class MarkerViewModel extends AndroidViewModel {
         return repository.getWithinBounds(swLat, swLong, neLat, neLong, numMarkersToGet);
     }
 
+
+    public void updateViewCount() { repository.updateViewCount(); }
+    public void updateScore() {
+        repository.updateScore();
+    }
+
     public void insertMarker(MarkerEntity marker) {
         repository.insert(marker);
     }

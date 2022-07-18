@@ -12,6 +12,7 @@ public class ParseMarker extends ParseObject {
     public static final String TITLE = "title";
     public static final String LOCATION = "location";
     public static final String VIEW_COUNT = "view_count";
+    public static final String SCORE = "score";
     public static final String CREATED_BY = "created_by";
 
     public ParseMarker() {}
@@ -42,7 +43,13 @@ public class ParseMarker extends ParseObject {
     }
 
     public int getViewCount() {
-        return (int) getNumber(VIEW_COUNT);
+        //return (int) getNumber(VIEW_COUNT);
+        return 0;
+    }
+
+    public int getScore() {
+        //return (int) getNumber(SCORE);
+        return 0;
     }
 
     public void setMedia(ParseFile media) {

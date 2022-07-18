@@ -12,7 +12,8 @@ import java.io.File;
 import java.sql.Date;
 
 @Entity (tableName = "marker_entity")
-public class MarkerEntity {
+public class MarkerEntity{
+
     @PrimaryKey
     @NonNull
     public String objectId;
@@ -38,7 +39,10 @@ public class MarkerEntity {
     @ColumnInfo(name = "view_count")
     public int view_count;
 
-    public MarkerEntity(String objectId, long createdAt, String title, double latitude, double longitude, String imageUrl, String createdBy, int view_count) {
+    @ColumnInfo(name = "score")
+    public int score;
+
+    public MarkerEntity(String objectId, long createdAt, String title, double latitude, double longitude, String imageUrl, String createdBy, int view_count, int score) {
         this.objectId = objectId;
         this.createdAt = createdAt;
         this.title = title;
@@ -47,6 +51,14 @@ public class MarkerEntity {
         this.imageUrl = imageUrl;
         this.createdBy = createdBy;
         this.view_count = view_count;
+        this.score = score;
     }
 
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
 }

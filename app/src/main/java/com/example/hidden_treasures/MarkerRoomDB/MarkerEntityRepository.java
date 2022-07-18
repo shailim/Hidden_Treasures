@@ -39,9 +39,28 @@ public class MarkerEntityRepository {
         return markerEntityDao.loadAllWithinBounds(swLat, swLong, neLat, neLong, numMarkersToGet);
     }
 
+
     public void insert(MarkerEntity marker) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             markerEntityDao.insert(marker);
+        });
+    }
+
+    public void updateViewCount() {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            for (MarkerEntity marker : allMarkers.getValue()) {
+                markerEntityDao.updateViewCount(marker.objectId, (int)(Math.random() * 1001));
+            }
+        });
+    }
+
+    public void updateScore() {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            for (MarkerEntity marker : allMarkers.getValue()) {
+                int timeDiff = (int)(System.currentTimeMillis() - marker.createdAt) / 3600000;
+                int score = marker.view_count - timeDiff;
+                markerEntityDao.updateScore(marker.objectId, score);
+            }
         });
     }
 
@@ -69,7 +88,8 @@ public class MarkerEntityRepository {
                     String imageUrl = object.getMedia().getUrl();
                     String createdBy = object.getCreatedBy();
                     int viewCount = object.getViewCount();
-                    MarkerEntity marker = new MarkerEntity(id, createdAt, title, latitude, longitude, imageUrl, createdBy, viewCount);
+                    int score = object.getScore();
+                    MarkerEntity marker = new MarkerEntity(id, createdAt, title, latitude, longitude, imageUrl, createdBy, viewCount, score);
                     // insert into Room database
                     markerEntityDao.insert(marker);
                 }

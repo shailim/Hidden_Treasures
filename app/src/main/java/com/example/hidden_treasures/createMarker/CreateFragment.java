@@ -230,7 +230,7 @@ public class CreateFragment extends Fragment {
                     long millis = System.currentTimeMillis();
                     MarkerEntity newMarker = new MarkerEntity(UUID.randomUUID().toString(),
                             millis, title, currentLocation.getLatitude(),
-                            currentLocation.getLongitude(), "https://picsum.photos/200/300", ParseUser.getCurrentUser().toString(), 0);
+                            currentLocation.getLongitude(), "https://picsum.photos/200/300", ParseUser.getCurrentUser().toString(), 0, 0);
                     markerViewModel.insertMarker(newMarker);
                 }
             }
