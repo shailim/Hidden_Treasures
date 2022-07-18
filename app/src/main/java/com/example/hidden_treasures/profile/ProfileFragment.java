@@ -6,6 +6,8 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -19,6 +21,7 @@ import android.widget.TextView;
 import com.example.hidden_treasures.MainActivity;
 import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.login.LoginActivity;
+import com.example.hidden_treasures.map.MarkerDetailFragment;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.parse.FindCallback;
@@ -136,5 +139,19 @@ public class ProfileFragment extends Fragment {
         markers.add(0, event.marker);
         adapter.notifyItemInserted(0);
         Log.i(TAG, "added new marker to list in profile");
+    }
+
+    @Subscribe
+    public void onImageClick(ImageClickEvent event) {
+        // to set marker detail as a child fragment
+        FragmentManager childFragMan = getChildFragmentManager();
+        FragmentTransaction childFragTrans = childFragMan.beginTransaction();
+
+        // create a new marker detail fragment instance and pass in image url, title
+        MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance(event.imageUrl, event.title);
+        // add the child fragment to current profile fragment
+        childFragTrans.add(R.id.profileFragmentLayout, markerDetailFrag);
+        childFragTrans.addToBackStack(null);
+        childFragTrans.commit();
     }
 }

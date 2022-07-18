@@ -62,6 +62,8 @@ import com.parse.ParseQuery;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -235,8 +237,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 // get the marker values
                 LatLng markerLocation = new LatLng(object.latitude, object.longitude);
 
+                //Bitmap icon = getMarkerIcon(object.imageUrl);
+
                 Marker mapMarker = map.addMarker(new MarkerOptions()
                         .position(markerLocation)
+                                //.icon(BitmapDescriptorFactory.fromBitmap(icon))
                         .title(object.title));
                 mapMarker.setTag(object.imageUrl);
                 markers.add(mapMarker);
@@ -244,11 +249,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    public Bitmap getMarkerIcon(ParseFile media) {
+    public Bitmap getMarkerIcon(String imageUrl) {
+
         Bitmap image = null;
+        URL url;
         try {
-            image = BitmapFactory.decodeFile(media.getFile().getAbsolutePath());
-        } catch (ParseException e) {
+            url = new URL(imageUrl);
+            image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+        } catch (IOException e) {
             e.printStackTrace();
         }
         if (image != null) {

@@ -27,7 +27,15 @@ public class LoginActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        // if user is already logged in, redirect to open map
+        if (ParseUser.getCurrentUser() != null) {
+            Intent i = new Intent(LoginActivity.this, MainActivity.class);
+            startActivity(i);
+        }
+
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_login);
 
         etUsername = findViewById(R.id.etUsername);

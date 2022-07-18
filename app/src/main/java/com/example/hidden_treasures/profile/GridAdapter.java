@@ -7,12 +7,18 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.hidden_treasures.createMarker.NewMarkerEvent;
+import com.example.hidden_treasures.map.MarkerDetailFragment;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.parse.ParseFile;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.List;
 
@@ -57,6 +63,13 @@ public class GridAdapter extends RecyclerView.Adapter<GridAdapter.ViewHolder> {
         public void bind(ParseMarker marker) {
             ParseFile image = marker.getMedia();
             Glide.with(context).load(image.getUrl()).into(ivMarkerImage);
+            ivMarkerImage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // posting new marker event
+                    EventBus.getDefault().post(new ImageClickEvent(marker.getMedia().getUrl(), marker.getTitle()));
+                }
+            });
         }
     }
 }
