@@ -27,6 +27,12 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
+import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
+import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
+import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.example.hidden_treasures.MainActivity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
@@ -53,6 +59,8 @@ import java.util.UUID;
 public class CreateFragment extends Fragment {
 
     private static final String TAG = "CreateFragment";
+
+    AmazonS3Client s3Client;
 
     private MarkerViewModel markerViewModel;
 
@@ -111,6 +119,33 @@ public class CreateFragment extends Fragment {
             photoFile = (File) getArguments().getSerializable(PHOTO_FILE);
             takenImage = getArguments().getParcelable(BITMAP_IMAGE);
         }
+
+        BasicAWSCredentials credentials = new BasicAWSCredentials(getString(R.string.aws_accessID), getString(R.string.aws_secret_key));
+        s3Client = new AmazonS3Client(credentials);
+    }
+
+    public void uploadImage() {
+        String key = "moire84";
+        TransferUtility trans = TransferUtility.builder().context(getContext()).s3Client(s3Client).build();
+        TransferObserver observer = trans.upload(getString(R.string.s3_bucket), key, photoFile);
+        observer.setTransferListener(new TransferListener() {
+            @Override
+            public void onStateChanged(int id, TransferState state) {
+                if (state == TransferState.COMPLETED) {
+                    Log.i(TAG, "successfully uploaded picture");
+                }
+            }
+
+            @Override
+            public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+
+            }
+
+            @Override
+            public void onError(int id, Exception ex) {
+
+            }
+        });
     }
 
     @Override
@@ -213,6 +248,8 @@ public class CreateFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 showProgressBar();
+
+                uploadImage();
 
                 // don't save marker is there's no title or picture
                 if (etTitle.getText() == null || etTitle.getText().toString().isEmpty()) {
