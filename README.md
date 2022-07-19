@@ -26,16 +26,16 @@ Hidden Treasures is an app to explore the world through the images and videos up
 
 **Required Must-have Stories**
 
-* User views an interactive map, clicks on markers, and sees the image taken at that place (like Snapchat maps)
+* User views an interactive map, clicks on com.example.hidden_treasures.markers, and sees the image taken at that place (like Snapchat maps)
 * User searches for a location and the map zooms in to that location
-* User logs in and adds their own markers on the map by taking or uploading a picture
+* User logs in and adds their own com.example.hidden_treasures.markers on the map by taking or uploading a picture
 * User can save an image to a collection of favorites
-* Profile pages for each user displaying their created markers and their collection
+* Profile pages for each user displaying their created com.example.hidden_treasures.markers and their collection
 * Markers have a view count
 
 **Optional Nice-to-have Stories**
 
-* Glossary page of all markers created categorized by location
+* Glossary page of all com.example.hidden_treasures.markers created categorized by location
 * Background music plays according to the location the user is currently viewing
     * Ex: If map is zoomed in on Mexico, Latin music will play
 * Create multiple collections (like Pinterest boards)
@@ -46,8 +46,8 @@ Hidden Treasures is an app to explore the world through the images and videos up
 * Map data is loaded as necessary
     * Only load data for the area the user is viewing
     * As user moves through map, load more data
-* Displaying markers on map
-    * If there are many markers, display only a few until user zooms in more
+* Displaying com.example.hidden_treasures.markers on map
+    * If there are many com.example.hidden_treasures.markers, display only a few until user zooms in more
 
 
 
@@ -57,7 +57,7 @@ Hidden Treasures is an app to explore the world through the images and videos up
    * Login isn't needed if just viewing the map
 
 * Sign up
-    * User creates an account to create markers or save them to their profile
+    * User creates an account to create com.example.hidden_treasures.markers or save them to their profile
 
 * Map
    * Opens to user's location, can then zoom in/out
@@ -69,7 +69,7 @@ Hidden Treasures is an app to explore the world through the images and videos up
    * Take/upload picture, add title & description
    
 * Profile
-    * User sees their markers and collection, can also upload a profile picture
+    * User sees their com.example.hidden_treasures.markers and collection, can also upload a profile picture
 
 * Collection
     * A grid view of all images saved
@@ -158,17 +158,17 @@ Model: Collection
 
 ### Networking
 - Map Screen
-    - (GET) Query the markers for the location the usr is viewing
+    - (GET) Query the com.example.hidden_treasures.markers for the location the usr is viewing
 ```
 ParseQuery<Marker> query = ParseQuery.getQuery(Marker.class);
     query.whereNear("mLocation", new ParseGeoPoint(latitude, longitude));
         query.findInBackground(new FindCallback<Marker>() {
             @Override
-            public void done(List<Marker> markers, ParseException e) {
-                if (markers != null) {
-                    displayMarkers(markers);
+            public void done(List<Marker> com.example.hidden_treasures.markers, ParseException e) {
+                if (com.example.hidden_treasures.markers != null) {
+                    displayMarkers(com.example.hidden_treasures.markers);
                 } else {
-                    Log.e(TAG, "Couldn't query markers");
+                    Log.e(TAG, "Couldn't query com.example.hidden_treasures.markers");
                 }
             }
         });
@@ -230,18 +230,18 @@ Collection collection = new Collection();
 
 * Week 1
    * Skeleton of all activities + fragments for bottom tab navigation
-   * Integrate the Google Maps API, get user’s location, be able to place markers on map
-   * Set up Parse database & save markers to database
+   * Integrate the Google Maps API, get user’s location, be able to place com.example.hidden_treasures.markers on map
+   * Set up Parse database & save com.example.hidden_treasures.markers to database
    * Map zoom in & zoom out
 
 * Week 2
     * Enable camera to take photos & videos
-    * Save pictures to the markers and make the markers clickable so the marker detail opens
+    * Save pictures to the com.example.hidden_treasures.markers and make the com.example.hidden_treasures.markers clickable so the marker detail opens
     * Search feature to search for a location on map
     * Sign in/Sign out
-    * Show user’s profile with created markers
+    * Show user’s profile with created com.example.hidden_treasures.markers
 
 * Week 3
-   * Getting markers from database
-   * Showing markers on the map
-   * Save markers to a collection
+   * Getting com.example.hidden_treasures.markers from database
+   * Showing com.example.hidden_treasures.markers on the map
+   * Save com.example.hidden_treasures.markers to a collection

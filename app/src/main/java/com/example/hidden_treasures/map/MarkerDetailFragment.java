@@ -24,6 +24,7 @@ import com.example.hidden_treasures.R;
 import com.example.hidden_treasures.util.onSwipeTouchListener;
 
 import java.net.URL;
+import java.util.Date;
 
 
 public class MarkerDetailFragment extends Fragment {
@@ -34,9 +35,13 @@ public class MarkerDetailFragment extends Fragment {
 
     private static final String MEDIA_KEY = "mediaUrl";
     private static final String TITLE = "title";
+    private static final String VIEW_COUNT = "viewCount";
+    private static final String DATE = "date";
 
     private String mediaKey;
     private String title;
+    private int viewCount;
+    private Date date;
 
     private Button btnCloseMarker;
 
@@ -46,11 +51,13 @@ public class MarkerDetailFragment extends Fragment {
 
 
     /* a url for image and the title for marker are passed as arguments from Map fragment */
-    public static MarkerDetailFragment newInstance(String mediaKey, String title) {
+    public static MarkerDetailFragment newInstance(String mediaKey, String title, int viewCount, Date date) {
         MarkerDetailFragment fragment = new MarkerDetailFragment();
         Bundle args = new Bundle();
         args.putString(MEDIA_KEY, mediaKey);
         args.putString(TITLE, title);
+        args.putInt(VIEW_COUNT, viewCount);
+        args.putSerializable(DATE, date);
         fragment.setArguments(args);
         return fragment;
     }
@@ -61,6 +68,9 @@ public class MarkerDetailFragment extends Fragment {
         if (getArguments() != null) {
             mediaKey = getArguments().getString(MEDIA_KEY);
             title = getArguments().getString(TITLE);
+            viewCount = getArguments().getInt(VIEW_COUNT);
+            date = (Date) getArguments().getSerializable(DATE);
+            Log.i(TAG, "data: " + viewCount + " " + date);
         }
         BasicAWSCredentials credentials = new BasicAWSCredentials(getString(R.string.aws_accessID), getString(R.string.aws_secret_key));
         s3Client = new AmazonS3Client(credentials);

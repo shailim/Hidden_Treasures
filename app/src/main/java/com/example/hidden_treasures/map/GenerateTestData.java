@@ -31,31 +31,31 @@ public class GenerateTestData {
 
     public List<ParseMarker> sampleData = new ArrayList<>();
 
-    /* Gets place data from sample file and creates new markers to populate map */
+    /* Gets place data from sample file and creates new com.example.hidden_treasures.markers to populate map */
     public void getData(Context c) throws IOException {
 
         // get list of places in sample data
         JSONArray placesList = getPlacesList(c);
 
-        // create the new markers
+        // create the new com.example.hidden_treasures.markers
         // use this key to access the same image in s3
         String key = "3c6216c8d3";
         createMarkers(key, placesList);
 
-        // save list of markers to parse
+        // save list of com.example.hidden_treasures.markers to parse
         ParseMarker.saveAllInBackground(sampleData, new SaveCallback() {
             @Override
             public void done(com.parse.ParseException e) {
                 if (e == null) {
-                    Log.i(TAG, "saved all markers");
+                    Log.i(TAG, "saved all com.example.hidden_treasures.markers");
                 } else {
-                    Log.i(TAG, "couldn't save markers");
+                    Log.i(TAG, "couldn't save com.example.hidden_treasures.markers");
                 }
             }
         });
     }
 
-    /* Creates new markers with the sample data */
+    /* Creates new com.example.hidden_treasures.markers with the sample data */
     private void createMarkers(String imageKey, JSONArray placesList) {
         try {
             int numMarkersToMake = 20;

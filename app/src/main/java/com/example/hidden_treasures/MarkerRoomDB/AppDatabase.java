@@ -58,11 +58,11 @@ public abstract class AppDatabase extends RoomDatabase {
             super.onCreate(db);
 
             databaseWriteExecutor.execute(() -> {
-                // Update data with markers from parse
+                // Update data with com.example.hidden_treasures.markers from parse
                 MarkerEntityDao dao = INSTANCE.markerEntityDao();
                 dao.deleteAll();
 
-                // Get all markers from Parse to populate the database
+                // Get all com.example.hidden_treasures.markers from Parse to populate the database
                 ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
                 // TODO: find out how to not set a limit at all
                 markerQuery.setLimit(10000);
@@ -81,7 +81,7 @@ public abstract class AppDatabase extends RoomDatabase {
                         MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
                         dao.insert(marker);
                     }
-                    Log.i("AppDatabase", "inserted all markers");
+                    Log.i("AppDatabase", "inserted all com.example.hidden_treasures.markers");
                 } catch (ParseException e) {
                     Log.i("AppDatabase", e.getMessage());
                 }

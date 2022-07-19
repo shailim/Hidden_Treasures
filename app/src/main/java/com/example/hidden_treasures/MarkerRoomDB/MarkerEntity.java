@@ -9,6 +9,7 @@ import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 import java.io.File;
+import java.sql.Blob;
 import java.sql.Date;
 
 @Entity (tableName = "marker_entity")

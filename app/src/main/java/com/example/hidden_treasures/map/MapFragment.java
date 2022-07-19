@@ -37,6 +37,7 @@ import com.bumptech.glide.request.transition.Transition;
 import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
+import com.example.hidden_treasures.markers.MarkerData;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.example.hidden_treasures.util.BitmapFormat;
@@ -79,6 +80,7 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -130,7 +132,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
         // associating marker view model with map fragment and getting the marker view model
         markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
-        // get the initial set of markers from view model
+        // get the initial set of com.example.hidden_treasures.markers from view model
         markerViewModel.getWithinBounds().observe(this, markers -> {
             markerEntities.clear();
             markerEntities.addAll(markers);
@@ -166,7 +168,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         Log.i(TAG, "on save instance being called");
-        // save values for the last query for markers
+        // save values for the last query for com.example.hidden_treasures.markers
         outState.putParcelable("lastExploredLocation", lastExploredLocation);
         outState.putFloat("lastZoomLevel", lastZoomLevel);
         super.onSaveInstanceState(outState);
@@ -183,15 +185,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         // if previous state was restored
         if (lastExploredLocation != null) {
-            // go to last looked at location and get those markers again
+            // go to last looked at location and get those com.example.hidden_treasures.markers again
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(lastExploredLocation, lastZoomLevel));
         } else {
             // set initial position of map
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 13));
         }
-        // place initial set of markers on map
+        // place initial set of com.example.hidden_treasures.markers on map
         placeMarkersOnMap(markerEntities);
-        // getting the markers from the eight cells around
+        // getting the com.example.hidden_treasures.markers from the eight cells around
         adjacentGeohash = GeoHash.neighbours(curGeohash);
         for (String cell : adjacentGeohash) {
             LatLngBounds bound = GeoHash.bounds(cell);
@@ -199,7 +201,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 placeMarkersOnMap(markers);
             });
         }
-        // enables any markers on the map to be clickable
+        // enables any com.example.hidden_treasures.markers on the map to be clickable
         enableMarkerClicks();
         // listen for whenever camera is idle on map
         watchCameraIdle();
@@ -235,7 +237,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
 
-    /* retrieves markers from database, then calls a function to place markers on map */
+    /* retrieves com.example.hidden_treasures.markers from database, then calls a function to place com.example.hidden_treasures.markers on map */
     private void getMarkers(int numMarkersToGet, LatLngBounds bound) {
         markerViewModel.getWithinBounds(bound.southwest.latitude,
                         bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, numMarkersToGet).observe(MapFragment.this, markers -> {
@@ -243,7 +245,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 });
     }
 
-    /* Using MarkerEntity instead of ParseMarker, Creates new markers and places them on the map */
+    /* Using MarkerEntity instead of ParseMarker, Creates new com.example.hidden_treasures.markers and places them on the map */
     private void placeMarkersOnMap(List<MarkerEntity> objects) {
         if (objects != null && objects.size() > 0) {
             // id is used to get random images
@@ -259,7 +261,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 Marker mapMarker = map.addMarker(new MarkerOptions()
                         .position(markerLocation)
                         .title(object.title));
-                mapMarker.setTag(object.imageKey);
+
+                // create an object to store marker data values
+                MarkerData data = new MarkerData(object.objectId, object.view_count, new Date(object.createdAt), object.imageKey);
+                mapMarker.setTag(data);
                 setMarkerIcon(mapMarker, object.imageKey);
                 markers.add(mapMarker);
             }
@@ -304,19 +309,21 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(location, 13));
     }
 
-    /* Adds a click listener on markers
+    /* Adds a click listener on com.example.hidden_treasures.markers
      * On marker click, a marker detail view opens up  */
     @SuppressLint("PotentialBehaviorOverride")
     public void enableMarkerClicks() {
         map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(@NonNull Marker marker) {
+                MarkerData data = (MarkerData) marker.getTag();
+                markerViewModel.updateViewCount(data.getId(), data.getViewCount());
                 // to set marker detail as a child fragment
                 FragmentManager childFragMan = getChildFragmentManager();
                 FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
                 // create a new marker detail fragment instance and pass in image url, title
-                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance((String) marker.getTag(), marker.getTitle());
+                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance(data.getImageKey(), marker.getTitle(), data.getViewCount(), data.getDate());
                 // add the child fragment to current map fragment
                 childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
                 childFragTrans.addToBackStack(null);
@@ -334,7 +341,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             lastExploredLocation = map.getCameraPosition().target;
             lastZoomLevel = map.getCameraPosition().zoom;
 
-            // whether user is in the same area or not, if they zoomed in or out more than two levels, get new markers
+            // whether user is in the same area or not, if they zoomed in or out more than two levels, get new com.example.hidden_treasures.markers
             if (lastZoomIn - map.getCameraPosition().zoom < -2 || lastZoomIn - map.getCameraPosition().zoom > 2) {
                 lastZoomIn = map.getCameraPosition().zoom;
                 updateAllNineCells();
@@ -363,7 +370,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     };
 
-    /* recalculates current and adjacent cells and gets markers for all of them */
+    /* recalculates current and adjacent cells and gets com.example.hidden_treasures.markers for all of them */
     private void updateAllNineCells() {
         curGeohash = GeoHash.encode(map.getCameraPosition().target.latitude, map.getCameraPosition().target.longitude, geohashPrecision(lastZoomLevel));
         int numMarkers = numMarkersToGet(lastZoomLevel);
@@ -375,7 +382,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         getMarkers(numMarkersToGet(map.getCameraPosition().zoom), GeoHash.bounds(curGeohash));
     }
 
-    /* shifts current cell to a neighbor cell position, gets new markers based on which neighbor cell the user is in */
+    /* shifts current cell to a neighbor cell position, gets new com.example.hidden_treasures.markers based on which neighbor cell the user is in */
     private void updateSomeCells(int numMarkers, String[] adjacentGeohash, int i) {
         switch (i) {
             case 0:
@@ -457,12 +464,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         LatLngBounds[] bounds = splitIntoGrid();
         // iterate through each bound
         for (int i = 0; i < 16; i++) {
-            //find count of markers within each bound
+            //find count of com.example.hidden_treasures.markers within each bound
             int count = 0;
             for (Marker marker : markers) {
                 if (bounds[i].contains(marker.getPosition())) {
                     count++;
-                    //if count > 5, only show the five markers, add others to list of invisible/removed
+                    //if count > 5, only show the five com.example.hidden_treasures.markers, add others to list of invisible/removed
                     if (count > 3) {
                         // add removed marker to list
                         removedMarkers.add(marker);
@@ -470,7 +477,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     }
                 }
             }
-            // if there's more space within a cell for more markers, go through the removed markers list
+            // if there's more space within a cell for more com.example.hidden_treasures.markers, go through the removed com.example.hidden_treasures.markers list
             List<Marker> toBeAddedBack = new ArrayList<>();
             if (count < 3) {
                 for (Marker marker : removedMarkers) {
@@ -488,13 +495,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     }
                 }
             }
-            // clean up removed markers list
+            // clean up removed com.example.hidden_treasures.markers list
             for (Marker marker: toBeAddedBack) {
                 removedMarkers.remove(marker);
             }
             toBeAddedBack.clear();
 
-            // remove all the extra markers
+            // remove all the extra com.example.hidden_treasures.markers
             for (Marker marker : removedMarkers) {
                 marker.setVisible(false);
                 markers.remove(marker);

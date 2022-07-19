@@ -77,7 +77,7 @@ public class ProfileFragment extends Fragment {
 
         tvUsername.setText(ParseUser.getCurrentUser().getUsername());
 
-        // get the user's created markers
+        // get the user's created com.example.hidden_treasures.markers
         queryMarkers();
 
         adapter =  new GridAdapter(getContext(), markers, getString(R.string.aws_accessID), getString(R.string.aws_secret_key), getString(R.string.s3_bucket));
@@ -103,7 +103,7 @@ public class ProfileFragment extends Fragment {
         super.onStop();
     }
 
-    /* Retrieves all the markers the user created in descending chronological order */
+    /* Retrieves all the com.example.hidden_treasures.markers the user created in descending chronological order */
     public void queryMarkers() {
         ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
         query.whereEqualTo("created_by", ParseUser.getCurrentUser());
@@ -115,7 +115,7 @@ public class ProfileFragment extends Fragment {
                     markers.addAll(parsePosts);
                     adapter.notifyDataSetChanged();
                 } else {
-                    Log.e(TAG, "Couldn't query markers");
+                    Log.e(TAG, "Couldn't query com.example.hidden_treasures.markers");
                 }
             }
         });
@@ -148,7 +148,7 @@ public class ProfileFragment extends Fragment {
         FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
         // create a new marker detail fragment instance and pass in image url, title
-        MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance(event.imageKey, event.title);
+        MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance(event.imageKey, event.title, event.viewCount, event.date);
         // add the child fragment to current profile fragment
         childFragTrans.add(R.id.profileFragmentLayout, markerDetailFrag);
         childFragTrans.addToBackStack(null);

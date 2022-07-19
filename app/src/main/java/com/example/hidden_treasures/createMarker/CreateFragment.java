@@ -224,7 +224,7 @@ public class CreateFragment extends Fragment {
             }
         });
 
-        /* submit button to create markers */
+        /* submit button to create com.example.hidden_treasures.markers */
         btnSubmitMarker.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -298,7 +298,7 @@ public class CreateFragment extends Fragment {
         URL url = s3Client.generatePresignedUrl(generatePresignedUrlRequest);
     }
 
-    /* Uploads markers to database in Parse */
+    /* Uploads com.example.hidden_treasures.markers to database in Parse */
     private void saveMarkerToParse(String id, String title, String imageKey, ParseGeoPoint parseGeoPoint, long time) {
         // create a new ParseMarker object
         ParseMarker parseMarker = new ParseMarker(id, title, imageKey, parseGeoPoint, time);

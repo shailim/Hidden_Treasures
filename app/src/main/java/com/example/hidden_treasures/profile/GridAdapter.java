@@ -25,6 +25,7 @@ import com.parse.ParseFile;
 import org.greenrobot.eventbus.EventBus;
 
 import java.net.URL;
+import java.util.Date;
 import java.util.List;
 
 public class GridAdapter extends RecyclerView.Adapter<GridAdapter.ViewHolder> {
@@ -80,7 +81,7 @@ public class GridAdapter extends RecyclerView.Adapter<GridAdapter.ViewHolder> {
                 @Override
                 public void onClick(View v) {
                     // posting new marker event
-                    EventBus.getDefault().post(new ImageClickEvent(imageKey, marker.getTitle()));
+                    EventBus.getDefault().post(new ImageClickEvent(imageKey, marker.getTitle(), marker.getViewCount(), new Date(marker.getTime())));
                 }
             });
         }

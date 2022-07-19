@@ -48,11 +48,9 @@ public class MarkerEntityRepository {
         });
     }
 
-    public void updateViewCount() {
+    public void updateViewCount(String id, int viewCount) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            for (MarkerEntity marker : allMarkers.getValue()) {
-                markerEntityDao.updateViewCount(marker.objectId, (int)(Math.random() * 1001));
-            }
+            markerEntityDao.updateViewCount(id, viewCount+1);
         });
     }
 
@@ -67,20 +65,20 @@ public class MarkerEntityRepository {
     }
 
     public void refreshData() {
-        // get all markers from parse that were uploaded after the last time on app and at most 24 hours before
+        // get all com.example.hidden_treasures.markers from parse that were uploaded after the last time on app and at most 24 hours before
         AppDatabase.databaseWriteExecutor.execute(() -> {
 
-            // Get all markers from Parse
+            // Get all com.example.hidden_treasures.markers from Parse
             ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
             // TODO: find out how to not set a limit at all
             markerQuery.setLimit(10000);
-            // get markers greater than when the app was last opened
+            // get com.example.hidden_treasures.markers greater than when the app was last opened
             long last24hours = System.currentTimeMillis() - 24 * 3600000;
             if (AppDatabase.lastOpened > last24hours) {
                 // if it's been less than a day since app was last opened
                 markerQuery.whereGreaterThanOrEqualTo("time", AppDatabase.lastOpened);
             } else {
-                // it's been more than a day since app was last opened, only get markers created in the last 24 hours
+                // it's been more than a day since app was last opened, only get com.example.hidden_treasures.markers created in the last 24 hours
                 markerQuery.whereGreaterThanOrEqualTo("time", last24hours);
             }
             try {
