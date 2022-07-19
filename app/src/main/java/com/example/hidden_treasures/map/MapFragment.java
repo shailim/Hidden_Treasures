@@ -88,6 +88,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -140,6 +142,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         markerViewModel.getWithinBounds().observe(this, markers -> {
             markerEntities.clear();
             markerEntities.addAll(markers);
+        });
+
+        // updating score of all markers
+        LiveData<List<MarkerEntity>> liveData;
+        liveData = markerViewModel.getAllMarkers();
+        liveData.observe(this, marker -> {
+            markerViewModel.updateScore();
+            // after updating the score, remove the observer so it doesn't keep updating
+            liveData.removeObservers(this);
         });
 
         // getting the initial position's geohash and adjacent cells

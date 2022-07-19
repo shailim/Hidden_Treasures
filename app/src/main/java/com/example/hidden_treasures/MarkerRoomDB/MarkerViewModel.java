@@ -22,19 +22,13 @@ public class MarkerViewModel extends AndroidViewModel {
         repository = new MarkerEntityRepository(application);
         allMarkers = repository.getAllMarkers();
 
-        // the default area to get the initial set of com.example.hidden_treasures.markers from if a previous state was not saved
+        // the default area to get the initial set of markers from if a previous state was not saved
         someMarkers = repository.getWithinBounds();
-        //repository.refreshData();
     }
 
     public LiveData<List<MarkerEntity>> getAllMarkers() { return allMarkers; }
 
     public LiveData<List<MarkerEntity>> getWithinBounds() { return someMarkers; }
-
-    public void setSomeMarkers(List<MarkerEntity> markers) {
-        someMarkers.getValue().clear();
-        someMarkers.getValue().addAll(markers);
-    }
 
     // to get the next groups of com.example.hidden_treasures.markers based on location
     public LiveData<List<MarkerEntity>> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {

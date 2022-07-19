@@ -60,9 +60,11 @@ public class MarkerEntityRepository {
         });
     }
 
+    // update score of all markers to reflect new view counts and time differences
     public void updateScore() {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             for (MarkerEntity marker : allMarkers.getValue()) {
+                Log.i("Repository", "updating score");
                 int timeDiff = (int)(System.currentTimeMillis() - marker.createdAt) / 3600000;
                 int score = marker.view_count - timeDiff;
                 markerEntityDao.updateScore(marker.objectId, score);
