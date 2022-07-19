@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /* Creates marker objects using sample place data */
 public class GenerateTestData {
@@ -33,14 +34,13 @@ public class GenerateTestData {
     /* Gets place data from sample file and creates new markers to populate map */
     public void getData(Context c) throws IOException {
 
-        // reuse same image for all the new sample markers
-        ParseFile image = getParseImage();
-
         // get list of places in sample data
         JSONArray placesList = getPlacesList(c);
 
         // create the new markers
-        createMarkers(image, placesList);
+        // use this key to access the same image in s3
+        String key = "3c6216c8d3";
+        createMarkers(key, placesList);
 
         // save list of markers to parse
         ParseMarker.saveAllInBackground(sampleData, new SaveCallback() {
@@ -56,32 +56,47 @@ public class GenerateTestData {
     }
 
     /* Creates new markers with the sample data */
-    private void createMarkers(ParseFile image, JSONArray placesList) {
+    private void createMarkers(String imageKey, JSONArray placesList) {
         try {
             int numMarkersToMake = 20;
             for (int i = 0; i < placesList.length(); i++) {
                 JSONObject object = placesList.getJSONObject(i);
+
+                // generate an id
+                String id = UUID.randomUUID().toString();
 
                 // get the latitude and longitude coordinates
                 double latitude = object.getDouble("lat");
                 double longitude = object.getDouble("lng");
 
                 // create the geoPoint object
-                ParseGeoPoint geoPoint = new ParseGeoPoint(latitude+3, longitude+3);
+                ParseGeoPoint geoPoint = new ParseGeoPoint(latitude, longitude);
 
                 // get the place name for title
                 String title = object.getString("toponymName");
 
+                // random view_count and score
+                int view_count = (int)(Math.random() * 1001) + 1;
+                int score = (int)(Math.random() * 101) + 1;
+
+                // get current time
+                long time = System.currentTimeMillis();
+
                 // create a new parse marker object with all that
-                ParseMarker newMarker = new ParseMarker("", title, image, geoPoint);
+                ParseMarker newMarker = new ParseMarker(id, title, imageKey, geoPoint, time);
+                newMarker.setScore(score);
+                newMarker.setViewCount(view_count);
 
                 // add it to the list
                 sampleData.add(newMarker);
                 if (numMarkersToMake > 0) {
                     for (int j = 1; j < numMarkersToMake; j++) {
+                        String id2 = UUID.randomUUID().toString();
                         int randomNum = (int) (Math.random() * -10 + 5);
                         ParseGeoPoint geoPoint2 = new ParseGeoPoint(latitude + randomNum, longitude + randomNum);
-                        newMarker = new ParseMarker("", title, image, geoPoint2);
+                        newMarker = new ParseMarker(id2, title, imageKey, geoPoint2, time);
+                        newMarker.setScore(score);
+                        newMarker.setViewCount(view_count);
                         sampleData.add(newMarker);
                     }
                     numMarkersToMake--;
@@ -98,7 +113,7 @@ public class GenerateTestData {
         JSONParser jsonParser = new JSONParser();
         JSONArray placesList = null;
 
-        try (InputStreamReader reader = new InputStreamReader(c.getAssets().open("california1.json"))) {
+        try (InputStreamReader reader = new InputStreamReader(c.getAssets().open("searchJSON.json"))) {
             String obj = jsonParser.parse(reader).toString();
             JSONObject jo = new JSONObject(obj);
 
@@ -112,20 +127,5 @@ public class GenerateTestData {
             Log.i(TAG, e.getMessage());
         }
         return placesList;
-    }
-
-    @Nullable
-    private ParseFile getParseImage() {
-        // get the image used before
-        ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
-        ParseFile image = null;
-        ParseMarker marker = null;
-        try {
-            marker = markerQuery.get("gfwdSfxouE");
-            image = marker.getMedia();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        return image;
     }
 }

@@ -27,12 +27,14 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.amazonaws.HttpMethod;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.example.hidden_treasures.MainActivity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
@@ -53,6 +55,7 @@ import com.roger.catloadinglibrary.CatLoadingView;
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
+import java.net.URL;
 import java.sql.Date;
 import java.util.UUID;
 
@@ -60,7 +63,8 @@ public class CreateFragment extends Fragment {
 
     private static final String TAG = "CreateFragment";
 
-    AmazonS3Client s3Client;
+    private AmazonS3Client s3Client;
+    private String key = "";
 
     private MarkerViewModel markerViewModel;
 
@@ -124,29 +128,6 @@ public class CreateFragment extends Fragment {
         s3Client = new AmazonS3Client(credentials);
     }
 
-    public void uploadImage() {
-        String key = "moire84";
-        TransferUtility trans = TransferUtility.builder().context(getContext()).s3Client(s3Client).build();
-        TransferObserver observer = trans.upload(getString(R.string.s3_bucket), key, photoFile);
-        observer.setTransferListener(new TransferListener() {
-            @Override
-            public void onStateChanged(int id, TransferState state) {
-                if (state == TransferState.COMPLETED) {
-                    Log.i(TAG, "successfully uploaded picture");
-                }
-            }
-
-            @Override
-            public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
-
-            }
-
-            @Override
-            public void onError(int id, Exception ex) {
-
-            }
-        });
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -254,33 +235,73 @@ public class CreateFragment extends Fragment {
                 // don't save marker is there's no title or picture
                 if (etTitle.getText() == null || etTitle.getText().toString().isEmpty()) {
                     Toast.makeText(getContext(), "Title is required", Toast.LENGTH_SHORT).show();
+                    // remove progress bar
+                    mCatProgressView.dismiss();
                 } else if (photoFile == null) {
                     Toast.makeText(getContext(), "A picture is required", Toast.LENGTH_SHORT).show();
+                    // remove progress bar
+                    mCatProgressView.dismiss();
+                } else if (key.length() == 0) {
+                    Toast.makeText(getContext(), "Unable to save image, please try again", Toast.LENGTH_SHORT).show();
+                    // remove progress bar
+                    mCatProgressView.dismiss();
                 } else {
                     // get the values for marker
                     String title = etTitle.getText().toString();
                     long millis = System.currentTimeMillis();
                     String id = UUID.randomUUID().toString();
-                    ParseFile file = new ParseFile(photoFile);
                     ParseGeoPoint parseGeoPoint = new ParseGeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
 
 
-                    saveMarkerToParse(id, title, file, parseGeoPoint);
+                    saveMarkerToParse(id, title, key, parseGeoPoint, millis);
 
                     // adding the new marker to the local database
                     MarkerEntity newMarker = new MarkerEntity(id,
                             millis, title, currentLocation.getLatitude(),
-                            currentLocation.getLongitude(), "https://picsum.photos/200/300", ParseUser.getCurrentUser().toString(), 0, 0);
+                            currentLocation.getLongitude(), key, ParseUser.getCurrentUser().toString(), 0, 0);
                     markerViewModel.insertMarker(newMarker);
                 }
             }
         });
     }
 
+    /* uploads marker image to an aws s3 bucket, store key in database */
+    public void uploadImage() {
+        // creating a key associated with the image to store in database
+        UUID uuid = UUID.randomUUID();
+        key = uuid.toString().substring(0, 10);
+        // uploading image to s3
+        TransferUtility trans = TransferUtility.builder().context(getContext()).s3Client(s3Client).build();
+        TransferObserver observer = trans.upload(getString(R.string.s3_bucket), key, photoFile);
+        observer.setTransferListener(new TransferListener() {
+            @Override
+            public void onStateChanged(int id, TransferState state) {
+                if (state == TransferState.COMPLETED) {
+                    Log.i(TAG, "successfully uploaded picture");
+                }
+            }
+
+            @Override
+            public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
+
+            }
+
+            @Override
+            public void onError(int id, Exception ex) {
+
+            }
+        });
+
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(getString(R.string.s3_bucket), key)
+                        .withMethod(HttpMethod.GET);
+        URL url = s3Client.generatePresignedUrl(generatePresignedUrlRequest);
+    }
+
     /* Uploads markers to database in Parse */
-    private void saveMarkerToParse(String id, String title, ParseFile file, ParseGeoPoint parseGeoPoint) {
+    private void saveMarkerToParse(String id, String title, String imageKey, ParseGeoPoint parseGeoPoint, long time) {
         // create a new ParseMarker object
-        ParseMarker parseMarker = new ParseMarker(id, title, file, parseGeoPoint);
+        ParseMarker parseMarker = new ParseMarker(id, title, imageKey, parseGeoPoint, time);
 
         // call the async query to save marker
         parseMarker.saveInBackground(new SaveCallback() {

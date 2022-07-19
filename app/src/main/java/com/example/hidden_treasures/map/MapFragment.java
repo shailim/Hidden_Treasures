@@ -243,7 +243,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         .position(markerLocation)
                                 //.icon(BitmapDescriptorFactory.fromBitmap(icon))
                         .title(object.title));
-                mapMarker.setTag(object.imageUrl);
+                mapMarker.setTag(object.imageKey);
                 markers.add(mapMarker);
             }
         }
@@ -270,11 +270,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     /* adds an individual newly created marker to the cluster manager */
-    public void addCreatedMarker(String title, LatLng location, ParseFile media) {
+    public void addCreatedMarker(String title, LatLng location, String imageKey) {
         Marker newMarker = map.addMarker(new MarkerOptions()
                 .position(location)
                 .title(title));
-        newMarker.setTag(media.getUrl());
+        newMarker.setTag(imageKey);
         Log.i(TAG, "moving camera to new marker");
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(location, 13));
     }

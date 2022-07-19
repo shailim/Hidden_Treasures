@@ -30,8 +30,8 @@ public class MarkerEntity{
     @ColumnInfo(name = "longitude")
     public double longitude;
 
-    @ColumnInfo(name = "image_url")
-    public String imageUrl;
+    @ColumnInfo(name = "image_key")
+    public String imageKey;
 
     @ColumnInfo(name = "created_by")
     public String createdBy;
@@ -42,13 +42,13 @@ public class MarkerEntity{
     @ColumnInfo(name = "score")
     public int score;
 
-    public MarkerEntity(String objectId, long createdAt, String title, double latitude, double longitude, String imageUrl, String createdBy, int view_count, int score) {
+    public MarkerEntity(String objectId, long createdAt, String title, double latitude, double longitude, String imageKey, String createdBy, int view_count, int score) {
         this.objectId = objectId;
         this.createdAt = createdAt;
         this.title = title;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.imageUrl = imageUrl;
+        this.imageKey = imageKey;
         this.createdBy = createdBy;
         this.view_count = view_count;
         this.score = score;

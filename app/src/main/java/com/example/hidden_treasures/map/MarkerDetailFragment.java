@@ -15,19 +15,27 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.amazonaws.HttpMethod;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.bumptech.glide.Glide;
 import com.example.hidden_treasures.R;
 import com.example.hidden_treasures.util.onSwipeTouchListener;
+
+import java.net.URL;
 
 
 public class MarkerDetailFragment extends Fragment {
 
     private static final String TAG = "MarkerDetailFragment";
 
-    private static final String MEDIA_URL = "mediaUrl";
+    private AmazonS3Client s3Client;
+
+    private static final String MEDIA_KEY = "mediaUrl";
     private static final String TITLE = "title";
 
-    private String mediaUrl;
+    private String mediaKey;
     private String title;
 
     private Button btnCloseMarker;
@@ -38,10 +46,10 @@ public class MarkerDetailFragment extends Fragment {
 
 
     /* a url for image and the title for marker are passed as arguments from Map fragment */
-    public static MarkerDetailFragment newInstance(String mediaUrl, String title) {
+    public static MarkerDetailFragment newInstance(String mediaKey, String title) {
         MarkerDetailFragment fragment = new MarkerDetailFragment();
         Bundle args = new Bundle();
-        args.putString(MEDIA_URL, mediaUrl);
+        args.putString(MEDIA_KEY, mediaKey);
         args.putString(TITLE, title);
         fragment.setArguments(args);
         return fragment;
@@ -51,9 +59,11 @@ public class MarkerDetailFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mediaUrl = getArguments().getString(MEDIA_URL);
+            mediaKey = getArguments().getString(MEDIA_KEY);
             title = getArguments().getString(TITLE);
         }
+        BasicAWSCredentials credentials = new BasicAWSCredentials(getString(R.string.aws_accessID), getString(R.string.aws_secret_key));
+        s3Client = new AmazonS3Client(credentials);
     }
 
     @Override
@@ -77,12 +87,23 @@ public class MarkerDetailFragment extends Fragment {
 
         // set the values to the views
         tvPlaceName.setText(title);
-        Glide.with(getContext()).load(mediaUrl).into(ivMarkerDetail);
+
+        // get a signed url for the image
+        String url = getSignedUrl(mediaKey).toString();
+        Glide.with(getContext()).load(url).into(ivMarkerDetail);
 
         // set onClick listeners for any buttons
         setOnClickListeners();
         // set swipe listener for swiping down
         setSwipeListener(view);
+    }
+
+    // generates a signed url to access the image in s3
+    private URL getSignedUrl(String key) {
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(getString(R.string.s3_bucket), key)
+                        .withMethod(HttpMethod.GET);
+        return s3Client.generatePresignedUrl(generatePresignedUrlRequest);
     }
 
     /* When user swipes down, the marker detail is removed and returns to map fragment */

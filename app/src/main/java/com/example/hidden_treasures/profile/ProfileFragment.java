@@ -80,7 +80,7 @@ public class ProfileFragment extends Fragment {
         // get the user's created markers
         queryMarkers();
 
-        adapter =  new GridAdapter(getContext(), markers);
+        adapter =  new GridAdapter(getContext(), markers, getString(R.string.aws_accessID), getString(R.string.aws_secret_key), getString(R.string.s3_bucket));
         gridView.setAdapter(adapter);
         gridView.setLayoutManager(new GridLayoutManager(getContext(), 3));
 

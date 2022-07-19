@@ -25,7 +25,7 @@ public class MarkerEntityRepository {
         AppDatabase db = AppDatabase.getDatabase(application);
         markerEntityDao = db.markerEntityDao();
         allMarkers = markerEntityDao.getAll();
-        //refreshData();
+        refreshData();
         String geohash = GeoHash.encode(37.4530, -122.1817, 6);
         LatLngBounds bound = GeoHash.bounds(geohash);
         someMarkers = markerEntityDao.loadAllWithinBounds(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, 50);
@@ -67,7 +67,6 @@ public class MarkerEntityRepository {
     }
 
     public void refreshData() {
-
         // get all markers from parse that were uploaded after the last time on app and at most 24 hours before
         AppDatabase.databaseWriteExecutor.execute(() -> {
 
@@ -76,24 +75,27 @@ public class MarkerEntityRepository {
             // TODO: find out how to not set a limit at all
             markerQuery.setLimit(10000);
             // get markers greater than when the app was last opened
-            Log.i("Repository", "last opened: " + AppDatabase.lastOpened);
-            markerQuery.whereGreaterThanOrEqualTo("time", AppDatabase.lastOpened);
             long last24hours = System.currentTimeMillis() - 24 * 3600000;
-            // also only get markers created in the last 24 hours
-            markerQuery.whereGreaterThanOrEqualTo("time", last24hours);
+            if (AppDatabase.lastOpened > last24hours) {
+                // if it's been less than a day since app was last opened
+                markerQuery.whereGreaterThanOrEqualTo("time", AppDatabase.lastOpened);
+            } else {
+                // it's been more than a day since app was last opened, only get markers created in the last 24 hours
+                markerQuery.whereGreaterThanOrEqualTo("time", last24hours);
+            }
             try {
                 List<ParseMarker> objects = markerQuery.find();
                 for (ParseMarker object : objects) {
                     String title = object.getTitle();
                     String id = object.getRoomid();
-                    long createdAt = object.getCreatedAt().getTime();
+                    long time = object.getTime();
                     double latitude = object.getLocation().getLatitude();
                     double longitude = object.getLocation().getLongitude();
-                    String imageUrl = object.getMedia().getUrl();
+                    String imageKey = object.getImage();
                     String createdBy = object.getCreatedBy();
                     int viewCount = object.getViewCount();
                     int score = object.getScore();
-                    MarkerEntity marker = new MarkerEntity(id, createdAt, title, latitude, longitude, imageUrl, createdBy, viewCount, score);
+                    MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
                     // insert into Room database
                     markerEntityDao.insert(marker);
                 }
@@ -101,7 +103,6 @@ public class MarkerEntityRepository {
             } catch (ParseException e) {
                 Log.i("Repository", e.getMessage());
             }
-            AppDatabase.lastOpened = System.currentTimeMillis();
         });
     }
 }

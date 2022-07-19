@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
 import com.example.hidden_treasures.createMarker.CameraFragment;
 import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.map.GenerateTestData;
@@ -48,6 +49,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+//        GenerateTestData testData = new GenerateTestData();
+//        try {
+//            testData.getData(this);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 
@@ -85,6 +93,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onStop() {
+        // save current time as the last opened time for app
+        AppDatabase.lastOpened = System.currentTimeMillis();
         // unregister from the event bus
         EventBus.getDefault().unregister(this);
         super.onStop();
@@ -130,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setSelectedItemId(R.id.action_map);
 
         LatLng location = new LatLng(event.marker.getLocation().getLatitude(), event.marker.getLocation().getLongitude());
-        displayMapFragment(event.marker.getTitle(), location, event.marker.getMedia());
+        displayMapFragment(event.marker.getTitle(), location, event.marker.getImage());
         handleBottomNavSelection();
     }
 
@@ -155,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /* shows map fragment and hides the other fragments, also displays new marker on map */
-    public void displayMapFragment(String title, LatLng location, ParseFile media) {
+    public void displayMapFragment(String title, LatLng location, String imageKey) {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         ft.setCustomAnimations(
                 R.anim.slide_in,  // enter
@@ -166,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
         } else { // fragment needs to be added to frame container
             ft.add(R.id.fragmentContainer, mapFragment);
         }
-        mapFragment.addCreatedMarker(title, location, media);
+        mapFragment.addCreatedMarker(title, location, imageKey);
         // Hide create fragment
         if (cameraFragment.isAdded()) { ft.hide(cameraFragment); }
         // Hide profile fragment

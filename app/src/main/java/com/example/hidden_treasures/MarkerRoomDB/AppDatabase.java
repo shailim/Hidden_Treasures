@@ -71,14 +71,14 @@ public abstract class AppDatabase extends RoomDatabase {
                     for (ParseMarker object : objects) {
                         String title = object.getTitle();
                         String id = object.getRoomid();
-                        long createdAt = object.getCreatedAt().getTime();
+                        long time = object.getTime();
                         double latitude = object.getLocation().getLatitude();
                         double longitude = object.getLocation().getLongitude();
-                        String imageUrl = object.getMedia().getUrl();
+                        String imageKey = object.getImage();
                         String createdBy = object.getCreatedBy();
                         int viewCount = object.getViewCount();
                         int score = object.getScore();
-                        MarkerEntity marker = new MarkerEntity(id, createdAt, title, latitude, longitude, imageUrl, createdBy, viewCount, score);
+                        MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
                         dao.insert(marker);
                     }
                     Log.i("AppDatabase", "inserted all markers");
