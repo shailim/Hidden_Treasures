@@ -133,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setSelectedItemId(R.id.action_map);
 
         LatLng location = new LatLng(event.marker.getLocation().getLatitude(), event.marker.getLocation().getLongitude());
-        displayMapFragment(event.marker.getTitle(), location, event.marker.getImage());
+        displayMapFragment(event.marker, location);
         handleBottomNavSelection();
     }
 
@@ -158,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /* shows map fragment and hides the other fragments, also displays new marker on map */
-    public void displayMapFragment(String title, LatLng location, String imageKey) {
+    public void displayMapFragment(ParseMarker marker, LatLng location) {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         ft.setCustomAnimations(
                 R.anim.slide_in,  // enter
@@ -169,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
         } else { // fragment needs to be added to frame container
             ft.add(R.id.fragmentContainer, mapFragment);
         }
-        mapFragment.addCreatedMarker(title, location, imageKey);
+        mapFragment.addCreatedMarker(marker, location);
         // Hide create fragment
         if (cameraFragment.isAdded()) { ft.hide(cameraFragment); }
         // Hide profile fragment

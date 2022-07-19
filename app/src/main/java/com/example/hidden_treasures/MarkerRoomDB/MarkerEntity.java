@@ -34,6 +34,9 @@ public class MarkerEntity{
     @ColumnInfo(name = "image_key")
     public String imageKey;
 
+    @ColumnInfo(name = "icon")
+    public byte[] icon;
+
     @ColumnInfo(name = "created_by")
     public String createdBy;
 

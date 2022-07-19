@@ -48,6 +48,12 @@ public class MarkerEntityRepository {
         });
     }
 
+    public void setIcon(byte[] icon, String id) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            markerEntityDao.setIcon(icon, id);
+        });
+    }
+
     public void updateViewCount(String id, int viewCount) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             markerEntityDao.updateViewCount(id, viewCount+1);

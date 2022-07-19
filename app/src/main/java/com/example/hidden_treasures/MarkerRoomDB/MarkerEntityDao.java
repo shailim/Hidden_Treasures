@@ -23,6 +23,9 @@ public interface MarkerEntityDao {
     @Insert
     void insert(MarkerEntity marker);
 
+    @Query("UPDATE marker_entity SET icon = :icon WHERE objectId = :id")
+    void setIcon(byte[] icon, String id);
+
     @Query("UPDATE marker_entity SET score = :score WHERE objectId = :id")
     void updateScore(String id, int score);
 

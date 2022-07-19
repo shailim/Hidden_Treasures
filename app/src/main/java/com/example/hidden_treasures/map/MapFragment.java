@@ -71,12 +71,16 @@ import com.parse.ParseQuery;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.sql.Blob;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -265,7 +269,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 // create an object to store marker data values
                 MarkerData data = new MarkerData(object.objectId, object.view_count, new Date(object.createdAt), object.imageKey);
                 mapMarker.setTag(data);
-                setMarkerIcon(mapMarker, object.imageKey);
+                if (object.icon != null) {
+                        byte[] bytes = object.icon;
+                        //byte[] bytes = object.icon.getBytes(1, (int)object.icon.length());
+                        Bitmap icon = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        mapMarker.setIcon(BitmapDescriptorFactory.fromBitmap(icon));
+                        Log.i(TAG, "icon already created");
+                } else {
+                    setMarkerIcon(mapMarker, object.imageKey, object.objectId);
+                }
                 markers.add(mapMarker);
             }
             //clusterMarkers();
@@ -281,7 +293,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     // sets the image icon for the marker
-    public void setMarkerIcon(Marker marker, String imageKey) {
+    public void setMarkerIcon(Marker marker, String imageKey, String id) {
         URL url = getSignedUrl(imageKey);
         Glide.with(this).asBitmap().load(url.toString()).into(new CustomTarget<Bitmap>() {
             @Override
@@ -291,6 +303,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 resource = BitmapFormat.addBorderToCircularBitmap(resource, 4, Color.WHITE);
                 resource = BitmapFormat.addShadowToCircularBitmap(resource, 4, Color.LTGRAY);
                 marker.setIcon(BitmapDescriptorFactory.fromBitmap(resource));
+
+                // save the bitmap icon to the database
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                resource.compress(Bitmap.CompressFormat.PNG, 0, stream);
+                byte[] bytes = stream.toByteArray();
+                markerViewModel.setIcon(bytes, id);
             }
             @Override
             public void onLoadCleared(@Nullable Drawable placeholder) {
@@ -300,11 +318,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     /* adds an individual newly created marker to the cluster manager */
-    public void addCreatedMarker(String title, LatLng location, String imageKey) {
+    public void addCreatedMarker(ParseMarker marker, LatLng location) {
         Marker newMarker = map.addMarker(new MarkerOptions()
                 .position(location)
-                .title(title));
-        newMarker.setTag(imageKey);
+                .title(marker.getTitle()));
+        MarkerData data = new MarkerData(marker.getRoomid(), marker.getViewCount(), new Date(marker.getTime()), marker.getImage());
+        newMarker.setTag(data);
+        setMarkerIcon(newMarker, marker.getImage(), marker.getRoomid());
         Log.i(TAG, "moving camera to new marker");
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(location, 13));
     }

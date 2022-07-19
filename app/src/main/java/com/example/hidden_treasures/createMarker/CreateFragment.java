@@ -291,11 +291,6 @@ public class CreateFragment extends Fragment {
 
             }
         });
-
-        GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                new GeneratePresignedUrlRequest(getString(R.string.s3_bucket), key)
-                        .withMethod(HttpMethod.GET);
-        URL url = s3Client.generatePresignedUrl(generatePresignedUrlRequest);
     }
 
     /* Uploads com.example.hidden_treasures.markers to database in Parse */
