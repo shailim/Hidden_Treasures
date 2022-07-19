@@ -32,6 +32,9 @@ public interface MarkerEntityDao {
     @Delete
     void delete(MarkerEntity marker);
 
+    @Query("DELETE FROM marker_entity WHERE created_at < :time")
+    void deleteOld(long time);
+
     @Query("DELETE FROM marker_entity")
     void deleteAll();
 }

@@ -64,15 +64,29 @@ public class MarkerEntityRepository {
         });
     }
 
+    // refreshes cache by getting new data and removing older data
     public void refreshData() {
-        // get all com.example.hidden_treasures.markers from parse that were uploaded after the last time on app and at most 24 hours before
+        getNewData();
+        removeOldData();
+    }
+
+    // removes all markers from cache older than 24 hours
+    private void removeOldData() {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            long last24hours = System.currentTimeMillis() - 24 * 3600000;
+            markerEntityDao.deleteOld(last24hours);
+        });
+    }
+
+    // gets all markers from parse that were uploaded after the last time on app and at most 24 hours before
+    private void getNewData() {
         AppDatabase.databaseWriteExecutor.execute(() -> {
 
-            // Get all com.example.hidden_treasures.markers from Parse
+            // Get all markers from Parse
             ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
             // TODO: find out how to not set a limit at all
             markerQuery.setLimit(10000);
-            // get com.example.hidden_treasures.markers greater than when the app was last opened
+            // get markers greater than when the app was last opened
             long last24hours = System.currentTimeMillis() - 24 * 3600000;
             if (AppDatabase.lastOpened > last24hours) {
                 // if it's been less than a day since app was last opened
