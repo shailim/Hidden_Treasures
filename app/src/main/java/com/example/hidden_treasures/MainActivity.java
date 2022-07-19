@@ -50,13 +50,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        GenerateTestData testData = new GenerateTestData();
-//        try {
-//            testData.getData(this);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
         bottomNavigationView = findViewById(R.id.bottom_navigation);
 
         // initialize the fragments

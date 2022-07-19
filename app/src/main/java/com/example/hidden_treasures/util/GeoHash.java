@@ -5,6 +5,7 @@ import com.google.android.gms.maps.model.LatLngBounds;
 
 public class GeoHash {
 
+    // to convert double digits to a character for the geohash value
     private static final String base32 = "0123456789bcdefghjkmnpqrstuvwxyz";
 
 
@@ -100,25 +101,26 @@ public class GeoHash {
     public static String adjacent(String geohash, int direction) {
         geohash = geohash.toLowerCase();
 
+
         final String[][] neighbour = new String[4][2];
-        neighbour[0][0] = "p0r21436x8zb9dcf5h7kjnmqesgutwvy";
-        neighbour[0][1] = "bc01fg45238967deuvhjyznpkmstqrwx";
-        neighbour[1][0] = "14365h7k9dcfesgujnmqp0r2twvyx8zb";
-        neighbour[1][1] = "238967debc01fg45kmstqrwxuvhjyznp";
-        neighbour[2][0] = "bc01fg45238967deuvhjyznpkmstqrwx";
-        neighbour[2][1] = "p0r21436x8zb9dcf5h7kjnmqesgutwvy";
-        neighbour[3][0] = "238967debc01fg45kmstqrwxuvhjyznp";
-        neighbour[3][1] = "14365h7k9dcfesgujnmqp0r2twvyx8zb";
+        neighbour[0][0] = "p0r21436x8zb9dcf5h7kjnmqesgutwvy"; // n, left
+        neighbour[0][1] = "bc01fg45238967deuvhjyznpkmstqrwx"; // n, right
+        neighbour[1][0] = "14365h7k9dcfesgujnmqp0r2twvyx8zb"; // s, left
+        neighbour[1][1] = "238967debc01fg45kmstqrwxuvhjyznp"; // s, right
+        neighbour[2][0] = "bc01fg45238967deuvhjyznpkmstqrwx"; // e, left
+        neighbour[2][1] = "p0r21436x8zb9dcf5h7kjnmqesgutwvy"; // e, right
+        neighbour[3][0] = "238967debc01fg45kmstqrwxuvhjyznp"; // w, left
+        neighbour[3][1] = "14365h7k9dcfesgujnmqp0r2twvyx8zb"; // w, right
 
         final String[][] border = new String[4][2];
-        border[0][0] = "prxz";
-        border[0][1] = "bcfguvyz";
-        border[1][0] = "028b";
-        border[1][1] = "0145hjnp";
-        border[2][0] = "bcfguvyz";
-        border[2][1] = "prxz";
-        border[3][0] = "0145hjnp";
-        border[3][1] = "028b";
+        border[0][0] = "prxz"; // n, left
+        border[0][1] = "bcfguvyz"; // n, right
+        border[1][0] = "028b"; // s, left
+        border[1][1] = "0145hjnp"; // s, right
+        border[2][0] = "bcfguvyz"; // e, left
+        border[2][1] = "prxz"; // e, right
+        border[3][0] = "0145hjnp"; // w, left
+        border[3][1] = "028b"; // w, right
 
 
         char lastCh = geohash.charAt(geohash.length()-1);    // last character of hash

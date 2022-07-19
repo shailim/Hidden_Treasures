@@ -148,7 +148,7 @@ public class ProfileFragment extends Fragment {
         FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
         // create a new marker detail fragment instance and pass in image url, title
-        MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance(event.imageUrl, event.title);
+        MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance(event.imageKey, event.title);
         // add the child fragment to current profile fragment
         childFragTrans.add(R.id.profileFragmentLayout, markerDetailFrag);
         childFragTrans.addToBackStack(null);

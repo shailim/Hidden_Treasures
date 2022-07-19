@@ -6,12 +6,14 @@ import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import android.os.Handler;
@@ -25,6 +27,13 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.amazonaws.HttpMethod;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
@@ -62,8 +71,11 @@ import com.parse.ParseQuery;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -72,12 +84,16 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import javax.net.ssl.HttpsURLConnection;
+
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public static final String TAG = "MapFragment";
 
     private Handler handler;
+
+    private AmazonS3Client s3Client;
 
     private MarkerViewModel markerViewModel;
 
@@ -106,6 +122,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         handler = new Handler();
+        BasicAWSCredentials credentials = new BasicAWSCredentials(getString(R.string.aws_accessID), getString(R.string.aws_secret_key));
+        s3Client = new AmazonS3Client(credentials);
         if (savedInstanceState != null) {
             lastExploredLocation = savedInstanceState.getParcelable("lastExploredLocation");
             lastZoomLevel = savedInstanceState.getFloat("lastZoomLevel");
@@ -195,6 +213,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
+    /* Determines how precise the geohash should be, how much area it should cover */
     public int geohashPrecision(float zoomLevel) {
         int zoom = Math.round(zoomLevel);
         switch (zoom) {
@@ -237,36 +256,42 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 // get the marker values
                 LatLng markerLocation = new LatLng(object.latitude, object.longitude);
 
-                //Bitmap icon = getMarkerIcon(object.imageUrl);
-
                 Marker mapMarker = map.addMarker(new MarkerOptions()
                         .position(markerLocation)
-                                //.icon(BitmapDescriptorFactory.fromBitmap(icon))
                         .title(object.title));
                 mapMarker.setTag(object.imageKey);
+                setMarkerIcon(mapMarker, object.imageKey);
                 markers.add(mapMarker);
             }
+            //clusterMarkers();
         }
     }
 
-    public Bitmap getMarkerIcon(String imageUrl) {
+    // generates a signed url to access the image in s3
+    private URL getSignedUrl(String key) {
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(getString(R.string.s3_bucket), key)
+                        .withMethod(HttpMethod.GET);
+        return s3Client.generatePresignedUrl(generatePresignedUrlRequest);
+    }
 
-        Bitmap image = null;
-        URL url;
-        try {
-            url = new URL(imageUrl);
-            image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        if (image != null) {
-            BitmapFormat formatIcon = new BitmapFormat();
-            image = Bitmap.createScaledBitmap(image, 75, 75, false);
-            image = formatIcon.getCircularBitmap(image);
-            image = formatIcon.addBorderToCircularBitmap(image, 4, Color.WHITE);
-            image = formatIcon.addShadowToCircularBitmap(image, 4, Color.LTGRAY);
-        }
-        return image;
+    // sets the image icon for the marker
+    public void setMarkerIcon(Marker marker, String imageKey) {
+        URL url = getSignedUrl(imageKey);
+        Glide.with(this).asBitmap().load(url.toString()).into(new CustomTarget<Bitmap>() {
+            @Override
+            public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                resource = Bitmap.createScaledBitmap(resource, 75, 75, false);
+                resource = BitmapFormat.getCircularBitmap(resource);
+                resource = BitmapFormat.addBorderToCircularBitmap(resource, 4, Color.WHITE);
+                resource = BitmapFormat.addShadowToCircularBitmap(resource, 4, Color.LTGRAY);
+                marker.setIcon(BitmapDescriptorFactory.fromBitmap(resource));
+            }
+            @Override
+            public void onLoadCleared(@Nullable Drawable placeholder) {
+
+            }
+        });
     }
 
     /* adds an individual newly created marker to the cluster manager */

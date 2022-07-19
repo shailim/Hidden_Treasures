@@ -80,7 +80,7 @@ public class GridAdapter extends RecyclerView.Adapter<GridAdapter.ViewHolder> {
                 @Override
                 public void onClick(View v) {
                     // posting new marker event
-                    EventBus.getDefault().post(new ImageClickEvent(url, marker.getTitle()));
+                    EventBus.getDefault().post(new ImageClickEvent(imageKey, marker.getTitle()));
                 }
             });
         }
