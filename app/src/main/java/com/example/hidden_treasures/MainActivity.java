@@ -4,6 +4,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import android.annotation.SuppressLint;
 import android.location.Location;
@@ -14,6 +16,7 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
+import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
 import com.example.hidden_treasures.createMarker.CameraFragment;
 import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.map.GenerateTestData;
@@ -88,6 +91,9 @@ public class MainActivity extends AppCompatActivity {
     public void onStop() {
         // save current time as the last opened time for app
         AppDatabase.lastOpened = System.currentTimeMillis();
+        // clear out cache
+        MarkerViewModel markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
+        markerViewModel.delete();
         // unregister from the event bus
         EventBus.getDefault().unregister(this);
         super.onStop();

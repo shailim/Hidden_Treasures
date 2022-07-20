@@ -47,4 +47,8 @@ public class MarkerViewModel extends AndroidViewModel {
     public void insertMarker(MarkerEntity marker) {
         repository.insert(marker);
     }
+
+    public void delete() {
+        repository.delete();
+    }
 }

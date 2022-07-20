@@ -42,7 +42,6 @@ public abstract class AppDatabase extends RoomDatabase {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "app_database")
-                            .addCallback(roomDatabaseCallback)
                             .build();
                     lastOpened = System.currentTimeMillis();
                 }
@@ -50,42 +49,4 @@ public abstract class AppDatabase extends RoomDatabase {
         }
         return INSTANCE;
     }
-
-    /* Callback to prepopulate data into the database upon first creating it */
-    private static RoomDatabase.Callback roomDatabaseCallback = new RoomDatabase.Callback() {
-        @Override
-        public void onCreate(@NonNull SupportSQLiteDatabase db) {
-            super.onCreate(db);
-
-            databaseWriteExecutor.execute(() -> {
-                // Update data with com.example.hidden_treasures.markers from parse
-                MarkerEntityDao dao = INSTANCE.markerEntityDao();
-                dao.deleteAll();
-
-                // Get all com.example.hidden_treasures.markers from Parse to populate the database
-                ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
-                // TODO: find out how to not set a limit at all
-                markerQuery.setLimit(10000);
-                try {
-                    List<ParseMarker> objects = markerQuery.find();
-                    for (ParseMarker object : objects) {
-                        String title = object.getTitle();
-                        String id = object.getRoomid();
-                        long time = object.getTime();
-                        double latitude = object.getLocation().getLatitude();
-                        double longitude = object.getLocation().getLongitude();
-                        String imageKey = object.getImage();
-                        String createdBy = object.getCreatedBy();
-                        int viewCount = object.getViewCount();
-                        int score = object.getScore();
-                        MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
-                        dao.insert(marker);
-                    }
-                    Log.i("AppDatabase", "inserted all com.example.hidden_treasures.markers");
-                } catch (ParseException e) {
-                    Log.i("AppDatabase", e.getMessage());
-                }
-            });
-        }
-    };
 }

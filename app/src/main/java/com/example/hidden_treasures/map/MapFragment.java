@@ -63,6 +63,7 @@ import com.google.maps.android.data.Feature;
 import com.google.maps.android.data.Layer;
 import com.google.maps.android.data.geojson.GeoJsonLayer;
 import com.parse.FindCallback;
+import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
@@ -107,16 +108,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private Set<String> markerIDs = new HashSet<>();
     private List<Marker> markers = new ArrayList<>();
-    private List<MarkerEntity> markerEntities = new ArrayList<>();
     private List<Marker> removedMarkers = new ArrayList<>();
     private GoogleMap map;
 
     private LatLng lastExploredLocation = null;
     private float lastZoomLevel = 0;
     private float lastZoomIn = 0;
+    private LatLngBounds lastExploredBounds = null;
 
-    private String curGeohash;
-    private String[] adjacentGeohash;
 
     public MapFragment() {
         // Required empty public constructor
@@ -138,11 +137,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
         // associating marker view model with map fragment and getting the marker view model
         markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
-        // get the initial set of com.example.hidden_treasures.markers from view model
-        markerViewModel.getWithinBounds().observe(this, markers -> {
-            markerEntities.clear();
-            markerEntities.addAll(markers);
-        });
 
         // updating score of all markers
         LiveData<List<MarkerEntity>> liveData;
@@ -152,9 +146,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             // after updating the score, remove the observer so it doesn't keep updating
             liveData.removeObservers(this);
         });
-
-        // getting the initial position's geohash and adjacent cells
-        curGeohash = GeoHash.encode(37.4530, -122.1817, 6);
     }
 
     @Override
@@ -183,7 +174,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         Log.i(TAG, "on save instance being called");
-        // save values for the last query for com.example.hidden_treasures.markers
+        // save values for the last query for markers
         outState.putParcelable("lastExploredLocation", lastExploredLocation);
         outState.putFloat("lastZoomLevel", lastZoomLevel);
         super.onSaveInstanceState(outState);
@@ -197,26 +188,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 .getString(R.string.map_style_json)));
         map.setMinZoomPreference(9);
         Log.i(TAG, "showing map");
-
         // if previous state was restored
         if (lastExploredLocation != null) {
-            // go to last looked at location and get those com.example.hidden_treasures.markers again
+            // go to last looked at location and get those markers again
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(lastExploredLocation, lastZoomLevel));
         } else {
             // set initial position of map
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 13));
         }
-        // place initial set of com.example.hidden_treasures.markers on map
-        placeMarkersOnMap(markerEntities);
-        // getting the com.example.hidden_treasures.markers from the eight cells around
-        adjacentGeohash = GeoHash.neighbours(curGeohash);
-        for (String cell : adjacentGeohash) {
-            LatLngBounds bound = GeoHash.bounds(cell);
-            markerViewModel.getWithinBounds(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, 50).observe(this, markers -> {
-                placeMarkersOnMap(markers);
-            });
-        }
-        // enables any com.example.hidden_treasures.markers on the map to be clickable
+        lastExploredBounds = map.getProjection().getVisibleRegion().latLngBounds;
+        // get an initial set of markers
+        getMarkersFromCache(numMarkersToGet(map.getCameraPosition().zoom), map.getProjection().getVisibleRegion().latLngBounds);
+        // enables any markers on the map to be clickable
         enableMarkerClicks();
         // listen for whenever camera is idle on map
         watchCameraIdle();
@@ -252,16 +235,62 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
 
-    /* retrieves com.example.hidden_treasures.markers from database, then calls a function to place com.example.hidden_treasures.markers on map */
-    private void getMarkers(int numMarkersToGet, LatLngBounds bound) {
+    /* retrieves markers from database, then calls a function to place com.example.hidden_treasures.markers on map */
+    private void getMarkersFromCache(int numMarkersToGet, LatLngBounds bound) {
+        // query local with the two bound points (if zoom is < 11, get 50, else get all)
         markerViewModel.getWithinBounds(bound.southwest.latitude,
-                        bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, numMarkersToGet).observe(MapFragment.this, markers -> {
-                    placeMarkersOnMap(markers);
+                bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, numMarkersToGet).observe(MapFragment.this, markers -> {
+            // place onto map, again checking ids for repeats
+            placeMarkerEntitiesOnMap(markers);
+            // query parse with the two bounds points and a list of marker ids to not get any repeats (if zoom < 11, get 50, else get all)
+            getMarkersFromServer(numMarkersToGet, bound, markerIDs);
                 });
     }
 
-    /* Using MarkerEntity instead of ParseMarker, Creates new com.example.hidden_treasures.markers and places them on the map */
-    private void placeMarkersOnMap(List<MarkerEntity> objects) {
+    /* retrieves markers from Parse database */
+    private void getMarkersFromServer(int numMarkersToGet, LatLngBounds bound, Set<String> ids) {
+        ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
+        query.whereNotContainedIn("roomId", ids);
+        query.setLimit(numMarkersToGet);
+        ParseGeoPoint southwest = new ParseGeoPoint(bound.southwest.latitude, bound.southwest.longitude);
+        ParseGeoPoint northeast = new ParseGeoPoint(bound.northeast.latitude, bound.northeast.longitude);
+        query.whereWithinGeoBox("location", southwest, northeast);
+        query.findInBackground(new FindCallback<ParseMarker>() {
+            @Override
+            public void done(List<ParseMarker> objects, ParseException e) {
+                if (e == null) {
+                    // place onto map, again checking ids for repeats
+                    placeParseMarkersOnMap(objects);
+                    // store these new ones into cache
+                    storeNewMarkers(objects);
+                }
+            }
+        });
+    }
+
+    /* Stores newly retrieved markers into cache */
+    private void storeNewMarkers(List<ParseMarker> objects) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            for (ParseMarker object : objects) {
+                if (!markerIDs.contains(object.getRoomid())) {
+                    String title = object.getTitle();
+                    String id = object.getRoomid();
+                    long time = object.getTime();
+                    double latitude = object.getLocation().getLatitude();
+                    double longitude = object.getLocation().getLongitude();
+                    String imageKey = object.getImage();
+                    String createdBy = object.getCreatedBy();
+                    int viewCount = object.getViewCount();
+                    int score = object.getScore();
+                    MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
+                    markerViewModel.insertMarker(marker);
+                }
+            }
+        });
+    }
+
+    /* Using MarkerEntity instead of ParseMarker, Creates new markers and places them on the map */
+    private void placeMarkerEntitiesOnMap(List<MarkerEntity> objects) {
         if (objects != null && objects.size() > 0) {
             // id is used to get random images
             for (MarkerEntity object : objects) {
@@ -282,7 +311,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 mapMarker.setTag(data);
                 if (object.icon != null) {
                         byte[] bytes = object.icon;
-                        //byte[] bytes = object.icon.getBytes(1, (int)object.icon.length());
                         Bitmap icon = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
                         mapMarker.setIcon(BitmapDescriptorFactory.fromBitmap(icon));
                         Log.i(TAG, "icon already created");
@@ -291,7 +319,39 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 }
                 markers.add(mapMarker);
             }
-            //clusterMarkers();
+        }
+    }
+
+    /* Using MarkerEntity instead of ParseMarker, Creates new com.example.hidden_treasures.markers and places them on the map */
+    private void placeParseMarkersOnMap(List<ParseMarker> objects) {
+        if (objects != null && objects.size() > 0) {
+            // id is used to get random images
+            for (ParseMarker object : objects) {
+                if (markerIDs.contains(object.getRoomid())) {
+                    continue;
+                }
+                // add ID of each marker placed on map to the list
+                markerIDs.add(object.getRoomid());
+                // get the marker values
+                LatLng markerLocation = new LatLng(object.getLocation().getLatitude(), object.getLocation().getLongitude());
+
+                Marker mapMarker = map.addMarker(new MarkerOptions()
+                        .position(markerLocation)
+                        .title(object.getTitle()));
+
+                // create an object to store marker data values
+                MarkerData data = new MarkerData(object.getRoomid(), object.getViewCount(), new Date(object.getTime()), object.getImage());
+                mapMarker.setTag(data);
+                if (object.getIcon() != null) {
+                    byte[] bytes = object.getIcon();
+                    Bitmap icon = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                    mapMarker.setIcon(BitmapDescriptorFactory.fromBitmap(icon));
+                    Log.i(TAG, "icon already created");
+                } else {
+                    setMarkerIcon(mapMarker, object.getImage(), object.getRoomid());
+                }
+                markers.add(mapMarker);
+            }
         }
     }
 
@@ -369,110 +429,34 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         @Override
         public void run() {
             Log.i(TAG, "camera is idle: " + i);
+            // get current camera position
             lastExploredLocation = map.getCameraPosition().target;
             lastZoomLevel = map.getCameraPosition().zoom;
 
-            // whether user is in the same area or not, if they zoomed in or out more than two levels, get new com.example.hidden_treasures.markers
+            // when camera idle and camera out of previous bounds or zoomed in more than twice or zoomed out more than twice
             if (lastZoomIn - map.getCameraPosition().zoom < -2 || lastZoomIn - map.getCameraPosition().zoom > 2) {
                 lastZoomIn = map.getCameraPosition().zoom;
-                updateAllNineCells();
+                updateMap();
                 return;
-            }
-
-            // if the camera position is outside the current center bound but
-            // if marker latlng is inside the bounds of a neighbor, do something different for each one
-            if (!GeoHash.bounds(curGeohash).contains(lastExploredLocation)) {
-                boolean stillWithinBounds = false;
-                for (int i = 0; i < adjacentGeohash.length-1; i++) {
-                    if (GeoHash.bounds(adjacentGeohash[i]).contains(lastExploredLocation)) {
-                        stillWithinBounds = true;
-                        int numMarkers = numMarkersToGet(lastZoomLevel);
-                        // update current geohash cell
-                        curGeohash = adjacentGeohash[i];
-                        // update the adjacent list
-                        adjacentGeohash = GeoHash.neighbours(curGeohash);
-                        updateSomeCells(numMarkers, adjacentGeohash, i);
-                    }
-                }
-                if (!stillWithinBounds) {
-                    updateAllNineCells();
-                }
+            } else if (!lastExploredBounds.contains(lastExploredLocation)) {
+                updateMap();
             }
         }
     };
 
-    /* recalculates current and adjacent cells and gets com.example.hidden_treasures.markers for all of them */
-    private void updateAllNineCells() {
-        curGeohash = GeoHash.encode(map.getCameraPosition().target.latitude, map.getCameraPosition().target.longitude, geohashPrecision(lastZoomLevel));
-        int numMarkers = numMarkersToGet(lastZoomLevel);
-        getMarkers(numMarkers, GeoHash.bounds(curGeohash));
-        adjacentGeohash = GeoHash.neighbours(curGeohash);
-        for (String cell : adjacentGeohash) {
-            getMarkers(numMarkers, GeoHash.bounds(cell));
-        }
-        getMarkers(numMarkersToGet(map.getCameraPosition().zoom), GeoHash.bounds(curGeohash));
-    }
-
-    /* shifts current cell to a neighbor cell position, gets new com.example.hidden_treasures.markers based on which neighbor cell the user is in */
-    private void updateSomeCells(int numMarkers, String[] adjacentGeohash, int i) {
-        switch (i) {
-            case 0:
-                // n: get the three cells above it
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[7])); // nw
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[0])); // n
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[1])); // ne
-                break;
-            case 1:
-                // ne: get the five cells around it
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[7])); // nw
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[0])); // n
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[1])); // ne
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[2])); // e
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[3])); // se
-                break;
-            case 2:
-                // e: get the three cells to the right
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[1])); // ne
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[2])); // e
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[3])); // se
-                break;
-            case 3:
-                // se: get the five cells around
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[1])); // ne
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[2])); // e
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[3])); // se
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[4])); // s
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[5])); // sw
-                break;
-            case 4:
-                // s: get the three below
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[3])); // se
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[4])); // s
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[5])); // sw
-                break;
-            case 5:
-                // sw: get the five around
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[3])); // se
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[4])); // s
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[5])); // sw
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[6])); // w
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[7])); // nw
-                break;
-            case 6:
-                // w: get the three cells to the left
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[5])); // sw
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[6])); // w
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[7])); // nw
-                break;
-            case 7:
-                // nw: get the five cells around
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[5])); // sw
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[6])); // w
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[7])); // nw
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[0])); // n
-                getMarkers(numMarkers, GeoHash.bounds(adjacentGeohash[1])); // ne
-                break;
-        }
+    // calculates new area to retrieve markers and queries for markers
+    private void updateMap() {
+        // get the area around screen, calculate height and width of screen lat/lng
+        LatLngBounds curBound = map.getProjection().getVisibleRegion().latLngBounds;
+        lastExploredBounds = curBound;
+        double cellHeight = Math.abs(curBound.northeast.latitude - curBound.southwest.latitude);
+        double cellWidth = Math.abs(curBound.northeast.longitude - curBound.southwest.longitude);
+        // get the bounds for the whole area
+        LatLng northeast = new LatLng(curBound.northeast.latitude + cellHeight, curBound.northeast.longitude + cellWidth);
+        LatLng southwest = new LatLng(curBound.southwest.latitude - cellHeight, curBound.southwest.longitude - cellWidth);
+        LatLngBounds outerBound = new LatLngBounds(southwest, northeast);
+        // query local with the two bound points (if zoom is < 11, get 50, else get all)
+        getMarkersFromCache(numMarkersToGet(lastZoomLevel), outerBound);
     }
 
     /* Adds a listener to track when camera is idle on map */
@@ -484,7 +468,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 // remove runnable from the queue (hasn't been started yet)
                 handler.removeCallbacks(r);
                 // add runnable to queue and run only after the set amount of time
-                handler.postDelayed(r, 1000);
+                handler.postDelayed(r, 500);
             }
         });
     }

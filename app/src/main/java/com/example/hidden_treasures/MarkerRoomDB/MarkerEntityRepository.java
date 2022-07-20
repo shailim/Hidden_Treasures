@@ -25,7 +25,6 @@ public class MarkerEntityRepository {
         AppDatabase db = AppDatabase.getDatabase(application);
         markerEntityDao = db.markerEntityDao();
         allMarkers = markerEntityDao.getAll();
-        refreshData();
         String geohash = GeoHash.encode(37.4530, -122.1817, 6);
         LatLngBounds bound = GeoHash.bounds(geohash);
         someMarkers = markerEntityDao.loadAllWithinBounds(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, 50);
@@ -45,6 +44,12 @@ public class MarkerEntityRepository {
     public void insert(MarkerEntity marker) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             markerEntityDao.insert(marker);
+        });
+    }
+
+    public void delete() {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            markerEntityDao.deleteAll();
         });
     }
 
@@ -68,60 +73,6 @@ public class MarkerEntityRepository {
                 int timeDiff = (int)(System.currentTimeMillis() - marker.createdAt) / 3600000;
                 int score = marker.view_count - timeDiff;
                 markerEntityDao.updateScore(marker.objectId, score);
-            }
-        });
-    }
-
-    // refreshes cache by getting new data and removing older data
-    public void refreshData() {
-        getNewData();
-        removeOldData();
-    }
-
-    // removes all markers from cache older than 24 hours
-    private void removeOldData() {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            long last24hours = System.currentTimeMillis() - 24 * 3600000;
-            markerEntityDao.deleteOld(last24hours);
-        });
-    }
-
-    // gets all markers from parse that were uploaded after the last time on app and at most 24 hours before
-    private void getNewData() {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-
-            // Get all markers from Parse
-            ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
-            // TODO: find out how to not set a limit at all
-            markerQuery.setLimit(10000);
-            // get markers greater than when the app was last opened
-            long last24hours = System.currentTimeMillis() - 24 * 3600000;
-            if (AppDatabase.lastOpened > last24hours) {
-                // if it's been less than a day since app was last opened
-                markerQuery.whereGreaterThanOrEqualTo("time", AppDatabase.lastOpened);
-            } else {
-                // it's been more than a day since app was last opened, only get com.example.hidden_treasures.markers created in the last 24 hours
-                markerQuery.whereGreaterThanOrEqualTo("time", last24hours);
-            }
-            try {
-                List<ParseMarker> objects = markerQuery.find();
-                for (ParseMarker object : objects) {
-                    String title = object.getTitle();
-                    String id = object.getRoomid();
-                    long time = object.getTime();
-                    double latitude = object.getLocation().getLatitude();
-                    double longitude = object.getLocation().getLongitude();
-                    String imageKey = object.getImage();
-                    String createdBy = object.getCreatedBy();
-                    int viewCount = object.getViewCount();
-                    int score = object.getScore();
-                    MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
-                    // insert into Room database
-                    markerEntityDao.insert(marker);
-                }
-                Log.i("Repository", "inserted " + objects.size() + " from parse");
-            } catch (ParseException e) {
-                Log.i("Repository", e.getMessage());
             }
         });
     }

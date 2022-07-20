@@ -56,6 +56,8 @@ public class ParseMarker extends ParseObject {
         return (int) getNumber(SCORE);
     }
 
+    public byte[] getIcon() { return null; }
+
     public void setTitle(String title) {
         put(TITLE, title);
     }
