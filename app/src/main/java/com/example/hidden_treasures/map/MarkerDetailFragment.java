@@ -21,12 +21,17 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.bumptech.glide.Glide;
 import com.example.hidden_treasures.R;
+import com.example.hidden_treasures.markers.MarkerData;
 import com.example.hidden_treasures.util.onSwipeTouchListener;
+import com.google.android.gms.maps.model.Marker;
 
 import org.w3c.dom.Text;
 
+import java.io.Serializable;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 
 public class MarkerDetailFragment extends Fragment {
@@ -39,13 +44,19 @@ public class MarkerDetailFragment extends Fragment {
     private static final String TITLE = "title";
     private static final String VIEW_COUNT = "viewCount";
     private static final String DATE = "date";
+    private static final String LIST = "list";
 
     private String mediaKey;
     private String title;
     private int viewCount;
     private Date date;
+    private List<Marker> list;
 
-    private Button btnCloseMarker;
+    private int curPos = 0;
+
+    private ImageView ivMarkerDetail;
+    private TextView tvTitle;
+    private TextView tvDate;
 
     public MarkerDetailFragment() {
         // Required empty public constructor
@@ -53,13 +64,14 @@ public class MarkerDetailFragment extends Fragment {
 
 
     /* a url for image and the title for marker are passed as arguments from Map fragment */
-    public static MarkerDetailFragment newInstance(String mediaKey, String title, int viewCount, Date date) {
+    public static MarkerDetailFragment newInstance(String mediaKey, String title, int viewCount, Date date, List<Marker> list) {
         MarkerDetailFragment fragment = new MarkerDetailFragment();
         Bundle args = new Bundle();
         args.putString(MEDIA_KEY, mediaKey);
         args.putString(TITLE, title);
         args.putInt(VIEW_COUNT, viewCount);
         args.putSerializable(DATE, date);
+        args.putSerializable(LIST, (Serializable) list);
         fragment.setArguments(args);
         return fragment;
     }
@@ -72,6 +84,7 @@ public class MarkerDetailFragment extends Fragment {
             title = getArguments().getString(TITLE);
             viewCount = getArguments().getInt(VIEW_COUNT);
             date = (Date) getArguments().getSerializable(DATE);
+            list = (ArrayList) getArguments().getSerializable(LIST);
             Log.i(TAG, "data: " + viewCount + " " + date);
         }
         BasicAWSCredentials credentials = new BasicAWSCredentials(getString(R.string.aws_accessID), getString(R.string.aws_secret_key));
@@ -93,23 +106,29 @@ public class MarkerDetailFragment extends Fragment {
         getActivity().findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
 
         // get references to views in marker detail layout
-        TextView tvPlaceName = view.findViewById(R.id.tvPlaceName);
-        ImageView ivMarkerDetail = view.findViewById(R.id.ivMarkerDetail);
-        btnCloseMarker = view.findViewById(R.id.btnCloseMarker);
-        TextView tvTitle = view.findViewById(R.id.tvTitle);
-        TextView tvDate = view.findViewById(R.id.tvDate);
+        ivMarkerDetail = view.findViewById(R.id.ivMarkerDetail);
+        tvTitle = view.findViewById(R.id.tvTitle);
+        tvDate = view.findViewById(R.id.tvDate);
 
-        // set the values to the views
-        tvPlaceName.setText(title);
-        tvTitle.setText(title);
-        tvDate.setText(calculateTimeAgo(date));
+        if (list.size() == 0) {
+            // set the values to the views
+            tvTitle.setText(title);
+            tvDate.setText(calculateTimeAgo(date));
 
-        // get a signed url for the image
-        String url = getSignedUrl(mediaKey).toString();
-        Glide.with(getContext()).load(url).into(ivMarkerDetail);
+            // get a signed url for the image
+            String url = getSignedUrl(mediaKey).toString();
+            Glide.with(getContext()).load(url).into(ivMarkerDetail);
+        } else {
+            // showing the first of the markers in the list
+            MarkerData data = (MarkerData) list.get(0).getTag();
+            tvTitle.setText(list.get(0).getTitle());
+            tvDate.setText(calculateTimeAgo(data.getDate()));
 
-        // set onClick listeners for any buttons
-        setOnClickListeners();
+            // get a signed url for the image
+            String url = getSignedUrl(data.getImageKey()).toString();
+            Glide.with(getContext()).load(url).into(ivMarkerDetail);
+
+        }
         // set swipe listener for swiping down
         setSwipeListener(view);
     }
@@ -132,16 +151,37 @@ public class MarkerDetailFragment extends Fragment {
                 super.onSwipeDown();
                 backToMap();
             }
-        });
-    }
 
-    /* Sets onCLick listeners for buttons */
-    private void setOnClickListeners() {
-        // button to go back to map fragment
-        btnCloseMarker.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                backToMap();
+            public void onSwipeLeft() {
+                super.onSwipeLeft();
+                // replace data with next marker
+                if (list.size() > 0 && list.get(curPos + 1) != null) {
+                    MarkerData data = (MarkerData) list.get(curPos+1).getTag();
+                    tvTitle.setText(list.get(curPos+1).getTitle());
+                    tvDate.setText(calculateTimeAgo(data.getDate()));
+
+                    // get a signed url for the image
+                    String url = getSignedUrl(data.getImageKey()).toString();
+                    Glide.with(getContext()).load(url).into(ivMarkerDetail);
+                    curPos++;
+                }
+            }
+
+            @Override
+            public void onSwipeRight() {
+                super.onSwipeRight();
+                // replace data with previous marker
+                if (list.size() > 0 && list.get(curPos - 1) != null) {
+                    MarkerData data = (MarkerData) list.get(curPos-1).getTag();
+                    tvTitle.setText(list.get(curPos-1).getTitle());
+                    tvDate.setText(calculateTimeAgo(data.getDate()));
+
+                    // get a signed url for the image
+                    String url = getSignedUrl(data.getImageKey()).toString();
+                    Glide.with(getContext()).load(url).into(ivMarkerDetail);
+                    curPos--;
+                }
             }
         });
     }

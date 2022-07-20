@@ -474,7 +474,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
                     // create a new marker detail fragment instance and pass in image url, title
-                    MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance(data.getImageKey(), marker.getTitle(), data.getViewCount(), data.getDate());
+                    MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance(data.getImageKey(), marker.getTitle(), data.getViewCount(), data.getDate(), new ArrayList<>());
                     // add the child fragment to current map fragment
                     childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
                     childFragTrans.addToBackStack(null);
@@ -485,9 +485,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
                     // create a new marker detail fragment instance and pass in image url, title
-                    MultipleMarkerDetailFragment multipleMarkerFrag = MultipleMarkerDetailFragment.newInstance(markers);
+                    MarkerDetailFragment markerDetailFragment = MarkerDetailFragment.newInstance(null, null, 0, null, markers);
                     // add the child fragment to current map fragment
-                    childFragTrans.add(R.id.mapFragmentLayout, multipleMarkerFrag);
+                    childFragTrans.add(R.id.mapFragmentLayout, markerDetailFragment);
+                    childFragTrans.addToBackStack(null);
                     childFragTrans.commit();
                 }
                 return false;
