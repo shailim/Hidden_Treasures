@@ -15,23 +15,16 @@ public class MarkerViewModel extends AndroidViewModel {
     private MarkerEntityRepository repository;
 
     private LiveData<List<MarkerEntity>> allMarkers;
-    private final LiveData<List<MarkerEntity>> someMarkers;
 
     public MarkerViewModel(@NonNull Application application) {
         super(application);
         repository = new MarkerEntityRepository(application);
-        allMarkers = repository.getAllMarkers();
-
-        // the default area to get the initial set of markers from if a previous state was not saved
-        someMarkers = repository.getWithinBounds();
     }
 
     public LiveData<List<MarkerEntity>> getAllMarkers() { return allMarkers; }
 
-    public LiveData<List<MarkerEntity>> getWithinBounds() { return someMarkers; }
-
     // to get the next groups of com.example.hidden_treasures.markers based on location
-    public LiveData<List<MarkerEntity>> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {
+    public List<MarkerEntity> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {
         return repository.getWithinBounds(swLat, swLong, neLat, neLong, numMarkersToGet);
     }
 
@@ -40,15 +33,16 @@ public class MarkerViewModel extends AndroidViewModel {
     }
 
     public void updateViewCount(String id, int viewCount) { repository.updateViewCount(id, viewCount); }
-    public void updateScore() {
-        repository.updateScore();
+
+    public void updateLastAccessed(String id) {
+        repository.updateLastAccessed(id);
     }
 
     public void insertMarker(MarkerEntity marker) {
         repository.insert(marker);
     }
 
-    public void delete() {
-        repository.delete();
+    public void delete(double swLat, double swLong, double neLat, double neLong) {
+        repository.delete(swLat, swLong, neLat, neLong);
     }
 }

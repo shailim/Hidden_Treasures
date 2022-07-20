@@ -95,6 +95,9 @@ import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -143,15 +146,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
         // associating marker view model with map fragment and getting the marker view model
         markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
-
-        // updating score of all markers
-        LiveData<List<MarkerEntity>> liveData;
-        liveData = markerViewModel.getAllMarkers();
-        liveData.observe(this, marker -> {
-            markerViewModel.updateScore();
-            // after updating the score, remove the observer so it doesn't keep updating
-            liveData.removeObservers(this);
-        });
     }
 
     @Override
@@ -243,14 +237,34 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     /* retrieves markers from database, then calls a function to place com.example.hidden_treasures.markers on map */
     private void getMarkersFromCache(int numMarkersToGet, LatLngBounds bound) {
-        // query local with the two bound points (if zoom is < 11, get 50, else get all)
-        markerViewModel.getWithinBounds(bound.southwest.latitude,
-                bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, numMarkersToGet).observe(MapFragment.this, markers -> {
-            // place onto map, again checking ids for repeats
+        // get markers from cache in background and after completion, place on map
+        FutureTask<List<MarkerEntity>> futureTask = new FutureTask<>(() -> markerViewModel.getWithinBounds(bound.southwest.latitude,
+                bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, numMarkersToGet));
+        AppDatabase.databaseWriteExecutor.execute(futureTask);
+
+        // check if the task completed, otherwise wait and check again
+        while(!futureTask.isDone() && !futureTask.isCancelled()) {
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            List<MarkerEntity> markers = futureTask.get();
+            Log.i(TAG, "list size: " + markers.size());
+            // display on map
             placeMarkerEntitiesOnMap(markers);
-            // query parse with the two bounds points and a list of marker ids to not get any repeats (if zoom < 11, get 50, else get all)
+            // update the last accessed time for the markers from cache
+            updateLastAccessed(markers);
+            // then get more markers from server
             getMarkersFromServer(numMarkersToGet, bound, markerIDs);
-                });
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
     }
 
     /* retrieves markers from Parse database */
@@ -267,6 +281,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 if (e == null) {
                     // place onto map, again checking ids for repeats
                     placeParseMarkersOnMap(objects);
+                    // remove markers in this area from cache
+                    markerViewModel.delete(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude);
                     // store these new ones into cache
                     storeNewMarkers(objects);
                 }
@@ -274,11 +290,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
+    // updates the last accessed time for the each marker retrieved
+    private void updateLastAccessed(List<MarkerEntity> markers ) {
+        for (MarkerEntity marker : markers) {
+            markerViewModel.updateLastAccessed(marker.objectId);
+        }
+    }
+
     /* Stores newly retrieved markers into cache */
     private void storeNewMarkers(List<ParseMarker> objects) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             for (ParseMarker object : objects) {
-                if (!markerIDs.contains(object.getRoomid())) {
                     String title = object.getTitle();
                     String id = object.getRoomid();
                     long time = object.getTime();
@@ -290,7 +312,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     int score = object.getScore();
                     MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
                     markerViewModel.insertMarker(marker);
-                }
             }
         });
     }

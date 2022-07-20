@@ -15,31 +15,21 @@ import com.parse.ParseQuery;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class MarkerEntityRepository {
     private MarkerEntityDao markerEntityDao;
-    private LiveData<List<MarkerEntity>> allMarkers;
-    private LiveData<List<MarkerEntity>> someMarkers;
 
     MarkerEntityRepository(Application application) {
         AppDatabase db = AppDatabase.getDatabase(application);
         markerEntityDao = db.markerEntityDao();
-        allMarkers = markerEntityDao.getAll();
-        String geohash = GeoHash.encode(37.4530, -122.1817, 6);
-        LatLngBounds bound = GeoHash.bounds(geohash);
-        someMarkers = markerEntityDao.loadAllWithinBounds(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, 50);
+        updateCache();
     }
 
-    LiveData<List<MarkerEntity>> getAllMarkers() {
-        return allMarkers;
-    }
-
-    LiveData<List<MarkerEntity>> getWithinBounds() { return someMarkers; }
-
-    LiveData<List<MarkerEntity>> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {
+    List<MarkerEntity> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {
         return markerEntityDao.loadAllWithinBounds(swLat, swLong, neLat, neLong, numMarkersToGet);
     }
-
 
     public void insert(MarkerEntity marker) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
@@ -47,9 +37,9 @@ public class MarkerEntityRepository {
         });
     }
 
-    public void delete() {
+    public void delete(double swLat, double swLong, double neLat, double neLong) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            markerEntityDao.deleteAll();
+            markerEntityDao.deleteAll(swLat, swLong, neLat, neLong);
         });
     }
 
@@ -65,15 +55,16 @@ public class MarkerEntityRepository {
         });
     }
 
-    // update score of all markers to reflect new view counts and time differences
-    public void updateScore() {
+    public void updateLastAccessed(String id) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            for (MarkerEntity marker : allMarkers.getValue()) {
-                Log.i("Repository", "updating score");
-                int timeDiff = (int)(System.currentTimeMillis() - marker.createdAt) / 3600000;
-                int score = marker.view_count - timeDiff;
-                markerEntityDao.updateScore(marker.objectId, score);
-            }
+            markerEntityDao.updateLastAccessed(id, System.currentTimeMillis());
+        });
+    }
+
+    private void updateCache() {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            long threeDaysAgo = System.currentTimeMillis() -  (3 * 86400000);
+            markerEntityDao.deleteOld( threeDaysAgo);
         });
     }
 }

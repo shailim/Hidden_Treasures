@@ -46,6 +46,9 @@ public class MarkerEntity{
     @ColumnInfo(name = "score")
     public int score;
 
+    @ColumnInfo(name = "last_accessed")
+    public long last_accessed;
+
     public MarkerEntity(String objectId, long createdAt, String title, double latitude, double longitude, String imageKey, String createdBy, int view_count, int score) {
         this.objectId = objectId;
         this.createdAt = createdAt;
@@ -56,6 +59,7 @@ public class MarkerEntity{
         this.createdBy = createdBy;
         this.view_count = view_count;
         this.score = score;
+        this.last_accessed = createdAt;
     }
 
     public int getScore() {

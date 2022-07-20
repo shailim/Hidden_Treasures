@@ -91,9 +91,6 @@ public class MainActivity extends AppCompatActivity {
     public void onStop() {
         // save current time as the last opened time for app
         AppDatabase.lastOpened = System.currentTimeMillis();
-        // clear out cache
-        MarkerViewModel markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
-        markerViewModel.delete();
         // unregister from the event bus
         EventBus.getDefault().unregister(this);
         super.onStop();

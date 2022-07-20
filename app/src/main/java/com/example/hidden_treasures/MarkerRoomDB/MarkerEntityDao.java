@@ -12,10 +12,10 @@ import java.util.List;
 @Dao
 public interface MarkerEntityDao {
     @Query("SELECT * FROM marker_entity")
-    LiveData<List<MarkerEntity>> getAll();
+    List<MarkerEntity> getAll();
 
     @Query("SELECT * FROM marker_entity WHERE latitude > :swLat AND latitude < :neLat AND longitude > :swLong AND longitude < :neLong ORDER BY score DESC LIMIT :numMarkersToGet")
-    LiveData<List<MarkerEntity>> loadAllWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet);
+    List<MarkerEntity> loadAllWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet);
 
     @Insert
     void insertAll(MarkerEntity... markers);
@@ -32,12 +32,15 @@ public interface MarkerEntityDao {
     @Query("UPDATE marker_entity SET view_count = :view_count WHERE objectId = :id")
     void updateViewCount(String id, int view_count);
 
+    @Query("UPDATE marker_entity SET last_accessed = :time WHERE objectId = :id")
+    void updateLastAccessed(String id, long time);
+
     @Delete
     void delete(MarkerEntity marker);
 
-    @Query("DELETE FROM marker_entity WHERE created_at < :time")
+    @Query("DELETE FROM marker_entity WHERE last_accessed < :time")
     void deleteOld(long time);
 
-    @Query("DELETE FROM marker_entity")
-    void deleteAll();
+    @Query("DELETE FROM marker_entity WHERE latitude > :swLat AND latitude < :neLat AND longitude > :swLong AND longitude < :neLong")
+    void deleteAll(double swLat, double swLong, double neLat, double neLong);
 }
