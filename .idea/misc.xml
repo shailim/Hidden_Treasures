@@ -8,6 +8,8 @@
         <entry key="app/src/main/res/drawable/border.xml" value="0.203" />
         <entry key="app/src/main/res/drawable/ic_baseline_camera_alt_24.xml" value="0.1" />
         <entry key="app/src/main/res/drawable/ic_baseline_map_24.xml" value="0.1" />
+        <entry key="app/src/main/res/drawable/pin.xml" value="0.1" />
+        <entry key="app/src/main/res/drawable/pushpin_icon_foreground.xml" value="0.1" />
         <entry key="app/src/main/res/layout/activity_login.xml" value="0.27708333333333335" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.165" />
         <entry key="app/src/main/res/layout/activity_marker_detail.xml" value="0.1" />

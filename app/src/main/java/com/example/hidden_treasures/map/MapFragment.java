@@ -32,6 +32,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.gif.GifDrawable;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
@@ -86,9 +87,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.Set;
@@ -115,6 +118,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private float lastZoomLevel = 0;
     private float lastZoomIn = 0;
     private LatLngBounds lastExploredBounds = null;
+
+    private HashMap<String, HashMap<String, List<Marker>>> markerTable = new HashMap<>();
+    private List<Marker> clusters = new ArrayList<>();
 
 
     public MapFragment() {
@@ -299,6 +305,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 }
                 // add ID of each marker placed on map to the list
                 markerIDs.add(object.objectId);
+
                 // get the marker values
                 LatLng markerLocation = new LatLng(object.latitude, object.longitude);
 
@@ -318,6 +325,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     setMarkerIcon(mapMarker, object.imageKey, object.objectId);
                 }
                 markers.add(mapMarker);
+                addToMarkerTable(mapMarker);
             }
         }
     }
@@ -351,7 +359,36 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     setMarkerIcon(mapMarker, object.getImage(), object.getRoomid());
                 }
                 markers.add(mapMarker);
+                addToMarkerTable(mapMarker);
             }
+        }
+    }
+
+    // according to the geohash of the marker, stores it into the marker table
+    private void addToMarkerTable(Marker marker) {
+        // get geohash of marker
+        // TODO: when uploading markers, generate their geohash, for testing I'm just generating here
+        String hash = GeoHash.encode(marker.getPosition().latitude, marker.getPosition().longitude, 7);
+        // if an entry for the geohash prefix of 4 characters doesn't exist
+        if (markerTable.get(hash.substring(0, 2)) == null) {
+            HashMap<String, List<Marker>> newTable = new HashMap<>();
+            List<Marker> list = new ArrayList<>();
+            list.add(marker);
+            // create a new hash table with a list value
+            newTable.put(hash.substring(0, 4), list);
+            markerTable.put(hash.substring(0, 2), newTable);
+            Log.i(TAG, "added new entry to first table");
+            // if an entry in the inner table for geohashes of precision length 7 doesn't exist
+        } else if (markerTable.get(hash.substring(0, 2)).get(hash.substring(0, 4)) == null) {
+            List<Marker> list = new ArrayList<>();
+            list.add(marker);
+            // create a new entry with a list value
+            markerTable.get(hash.substring(0, 2)).put(hash.substring(0, 4), list);
+            Log.i(TAG, "added new entry to second table");
+        } else {
+            // add the marker to the list
+            markerTable.get(hash.substring(0, 2)).get(hash.substring(0, 4)).add(marker);
+            Log.i(TAG, "added to list in marker table: " + hash);
         }
     }
 
@@ -407,18 +444,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(@NonNull Marker marker) {
-                MarkerData data = (MarkerData) marker.getTag();
-                markerViewModel.updateViewCount(data.getId(), data.getViewCount());
-                // to set marker detail as a child fragment
-                FragmentManager childFragMan = getChildFragmentManager();
-                FragmentTransaction childFragTrans = childFragMan.beginTransaction();
+                if (marker.getTag() != null && marker.getTag() instanceof MarkerData) {
+                    MarkerData data = (MarkerData) marker.getTag();
+                    markerViewModel.updateViewCount(data.getId(), data.getViewCount());
+                    // to set marker detail as a child fragment
+                    FragmentManager childFragMan = getChildFragmentManager();
+                    FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
-                // create a new marker detail fragment instance and pass in image url, title
-                MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance(data.getImageKey(), marker.getTitle(), data.getViewCount(), data.getDate());
-                // add the child fragment to current map fragment
-                childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
-                childFragTrans.addToBackStack(null);
-                childFragTrans.commit();
+                    // create a new marker detail fragment instance and pass in image url, title
+                    MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance(data.getImageKey(), marker.getTitle(), data.getViewCount(), data.getDate());
+                    // add the child fragment to current map fragment
+                    childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
+                    childFragTrans.addToBackStack(null);
+                    childFragTrans.commit();
+                }
                 return false;
             }
         });
@@ -440,6 +479,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 return;
             } else if (!lastExploredBounds.contains(lastExploredLocation)) {
                 updateMap();
+            }
+            if (lastZoomLevel <= 11) {
+                clusterMarkers();
+            } else {
+                deCluster();
             }
         }
     };
@@ -474,81 +518,46 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void clusterMarkers() {
-        Log.i(TAG, "now onto clustering");
-        // first split screen into grid and get an array of 16 cells
-        LatLngBounds[] bounds = splitIntoGrid();
-        // iterate through each bound
-        for (int i = 0; i < 16; i++) {
-            //find count of com.example.hidden_treasures.markers within each bound
-            int count = 0;
-            for (Marker marker : markers) {
-                if (bounds[i].contains(marker.getPosition())) {
-                    count++;
-                    //if count > 5, only show the five com.example.hidden_treasures.markers, add others to list of invisible/removed
-                    if (count > 3) {
-                        // add removed marker to list
-                        removedMarkers.add(marker);
-                        Log.i(TAG, "removed a marker");
-                    }
-                }
-            }
-            // if there's more space within a cell for more com.example.hidden_treasures.markers, go through the removed com.example.hidden_treasures.markers list
-            List<Marker> toBeAddedBack = new ArrayList<>();
-            if (count < 3) {
-                for (Marker marker : removedMarkers) {
-                    if (count < 3) {
-                        if (bounds[i].contains(marker.getPosition())) {
-                            marker.setVisible(true);
-                            markers.add(marker);
-
-                            // take it out from removedMarkers list later by adding it to an toBeAddedBack list
-                            toBeAddedBack.add(marker);
-                            count++;
+            Log.i(TAG, "now onto clustering");
+            String curHash = GeoHash.encode(map.getCameraPosition().target.latitude, map.getCameraPosition().target.longitude, 2);
+            if (markerTable.get(curHash) != null) {
+                for (Map.Entry<String, List<Marker>> set : markerTable.get(curHash).entrySet()) {
+                    if (set.getValue() != null && set.getValue().size() > 2) {
+                        List<Marker> removed = new ArrayList<>();
+                        for (Marker marker : set.getValue()) {
+                            marker.setVisible(false);
+                            removed.add(marker);
+                            Log.i(TAG, "removed a marker");
                         }
-                    } else {
-                        break;
+                        // TODO: get the center point of the geohash bound and set cluster position to that
+                        Marker cluster = map.addMarker(new MarkerOptions().title("Cluster").position(set.getValue().get(0).getPosition()));
+                        setCLusterIcon(cluster);
+                        cluster.setTag(removed);
+                        clusters.add(cluster);
                     }
                 }
             }
-            // clean up removed com.example.hidden_treasures.markers list
-            for (Marker marker: toBeAddedBack) {
-                removedMarkers.remove(marker);
-            }
-            toBeAddedBack.clear();
-
-            // remove all the extra com.example.hidden_treasures.markers
-            for (Marker marker : removedMarkers) {
-                marker.setVisible(false);
-                markers.remove(marker);
-            }
-        }
     }
 
-    /* Splits the screen into 16 cells, a 4x4 grid */
-    public LatLngBounds[] splitIntoGrid() {
-        // get the bounds for the screen
-        LatLng southwest = map.getProjection().getVisibleRegion().latLngBounds.southwest;
-        LatLng northeast = map.getProjection().getVisibleRegion().latLngBounds.northeast;
+    private void setCLusterIcon(Marker cluster) {
+        Bitmap image = BitmapFactory.decodeResource(getResources(), R.drawable.pin_removebg_preview);
+        image = Bitmap.createScaledBitmap(image, 100, 100, false);
+        image = BitmapFormat.getCircularBitmap(image);
+        cluster.setIcon(BitmapDescriptorFactory.fromBitmap(image));
+    }
 
-        // calculate cell height and width
-        double totalHeight = Math.abs(northeast.latitude - southwest.latitude);
-        double totalWidth = Math.abs(southwest.longitude - northeast.longitude);
-        double cellHeight = totalHeight / 4;
-        double cellWidth = totalWidth / 4;
-
-        // create a new array to store the 16 cell bounds
-        LatLngBounds[] gridCells = new LatLngBounds[16];
-        // set the first cell's bounds
-        gridCells[0] = new LatLngBounds(southwest, new LatLng(southwest.latitude + cellHeight, southwest.longitude + cellWidth));
-        // set the remaining cell bounds
-        for (int i = 1; i < 16; i++) {
-            if (i % 4 == 0) {
-                gridCells[i] = new LatLngBounds(new LatLng(gridCells[i-4].southwest.latitude, gridCells[i-4].southwest.longitude + cellWidth), new LatLng(gridCells[i-4].northeast.latitude, gridCells[i-4].northeast.longitude + cellWidth));
-            } else {
-                gridCells[i] = new LatLngBounds(new LatLng(gridCells[i-1].southwest.latitude + cellHeight, gridCells[i-1].southwest.longitude), new LatLng(gridCells[i-1].northeast.latitude + cellHeight, gridCells[i-1].northeast.longitude));
+    // removes clusters and re-shows markers
+    private void deCluster() {
+        for (Marker cluster : clusters) {
+            // re-show all the markers
+            for (Marker marker : (List<Marker>) cluster.getTag()) {
+                marker.setVisible(true);
             }
+            // remove the cluster
+            cluster.remove();
         }
-        return gridCells;
+        // empty the clusters list
+        clusters.clear();
     }
 
     /* Uses Google's Places API to display place name for autocomplete searching */
