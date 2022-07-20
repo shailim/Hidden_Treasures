@@ -348,6 +348,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 markers.add(mapMarker);
                 addToMarkerTable(mapMarker);
             }
+            clusterMarkers();
         }
     }
 
@@ -478,6 +479,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
                     childFragTrans.addToBackStack(null);
                     childFragTrans.commit();
+                } else if (marker.getTag() instanceof ArrayList) {
+                    List<Marker> markers = (ArrayList) marker.getTag();
+                    FragmentManager childFragMan = getChildFragmentManager();
+                    FragmentTransaction childFragTrans = childFragMan.beginTransaction();
+
+                    // create a new marker detail fragment instance and pass in image url, title
+                    MultipleMarkerDetailFragment multipleMarkerFrag = MultipleMarkerDetailFragment.newInstance(markers);
+                    // add the child fragment to current map fragment
+                    childFragTrans.add(R.id.mapFragmentLayout, multipleMarkerFrag);
+                    childFragTrans.commit();
                 }
                 return false;
             }
@@ -493,6 +504,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             lastExploredLocation = map.getCameraPosition().target;
             lastZoomLevel = map.getCameraPosition().zoom;
 
+            if (lastZoomLevel > 11) {
+                deCluster();
+            }
             // when camera idle and camera out of previous bounds or zoomed in more than twice or zoomed out more than twice
             if (lastZoomIn - map.getCameraPosition().zoom < -2 || lastZoomIn - map.getCameraPosition().zoom > 2) {
                 lastZoomIn = map.getCameraPosition().zoom;
@@ -500,11 +514,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 return;
             } else if (!lastExploredBounds.contains(lastExploredLocation)) {
                 updateMap();
-            }
-            if (lastZoomLevel <= 11) {
+            } else if (lastZoomLevel <= 11) {
                 clusterMarkers();
-            } else {
-                deCluster();
             }
         }
     };
