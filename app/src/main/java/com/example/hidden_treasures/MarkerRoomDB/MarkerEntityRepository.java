@@ -9,8 +9,10 @@ import com.example.hidden_treasures.App;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.util.GeoHash;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseQuery;
+import com.parse.ParseUser;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -24,7 +26,9 @@ public class MarkerEntityRepository {
     MarkerEntityRepository(Application application) {
         AppDatabase db = AppDatabase.getDatabase(application);
         markerEntityDao = db.markerEntityDao();
-        updateCache();
+        if (ParseUser.getCurrentUser() != null) {
+            updateCache();
+        }
     }
 
     List<MarkerEntity> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {

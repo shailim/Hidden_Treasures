@@ -24,4 +24,5 @@
             app:srcCompat="@drawable/ic_baseline_camera_alt_64"
             android:backgroundTint="@color/white"/>
     </androidx.cardview.widget.CardView>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

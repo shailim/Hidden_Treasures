@@ -28,12 +28,6 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        // if user is already logged in, redirect to open map
-        if (ParseUser.getCurrentUser() != null) {
-            Intent i = new Intent(LoginActivity.this, MainActivity.class);
-            startActivity(i);
-        }
-
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_login);
@@ -61,8 +55,8 @@ public class LoginActivity extends AppCompatActivity {
                     public void done(ParseUser user, ParseException e) {
                         if (e == null) {
                             Intent i = new Intent(LoginActivity.this, MainActivity.class);
-                            i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                             startActivity(i);
+                            finish();
                         } else {
                             Toast.makeText(LoginActivity.this, "Unable to log in", Toast.LENGTH_SHORT).show();
                         }

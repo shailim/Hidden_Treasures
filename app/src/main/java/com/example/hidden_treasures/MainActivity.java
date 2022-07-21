@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -19,6 +20,7 @@ import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
 import com.example.hidden_treasures.createMarker.CameraFragment;
 import com.example.hidden_treasures.createMarker.NewMarkerEvent;
+import com.example.hidden_treasures.login.LoginActivity;
 import com.example.hidden_treasures.map.GenerateTestData;
 import com.example.hidden_treasures.map.MapFragment;
 import com.example.hidden_treasures.models.ParseMarker;
@@ -27,6 +29,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 import com.parse.ParseFile;
+import com.parse.ParseUser;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -51,6 +54,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // if user is not logged in, redirect to login activity
+        if (ParseUser.getCurrentUser() == null) {
+            Intent i = new Intent(MainActivity.this, LoginActivity.class);
+            startActivity(i);
+            finish();
+        }
         setContentView(R.layout.activity_main);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);

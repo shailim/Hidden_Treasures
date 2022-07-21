@@ -129,6 +129,7 @@ public class ProfileFragment extends Fragment {
             public void onClick(View v) {
                 ParseUser.logOutInBackground();
                 startActivity(new Intent(getContext(), LoginActivity.class));
+                getActivity().finish();
             }
         });
     }
