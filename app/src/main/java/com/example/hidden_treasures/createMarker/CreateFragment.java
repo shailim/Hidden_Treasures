@@ -249,7 +249,6 @@ public class CreateFragment extends Fragment {
                     // get the values for marker
                     String title = etTitle.getText().toString();
                     long millis = System.currentTimeMillis();
-                    String id = UUID.randomUUID().toString();
                     ParseGeoPoint parseGeoPoint = new ParseGeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
 
                     saveMarkerToParse(title, key, parseGeoPoint, millis);

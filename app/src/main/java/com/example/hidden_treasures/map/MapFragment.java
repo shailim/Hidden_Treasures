@@ -245,28 +245,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    /* Determines how precise the geohash should be, how much area it should cover */
-    public int geohashPrecision(float zoomLevel) {
-        int zoom = Math.round(zoomLevel);
-        switch (zoom) {
-            case 9:
-            case 10:
-                return 4;
-            case 11:
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-                return 5;
-            case 16:
-            case 17:
-                return 6;
-            default:
-                return 4;
-        }
-    }
-
-
     /* retrieves markers from database, then calls a function to place com.example.hidden_treasures.markers on map */
     private void getMarkersFromCache(int numMarkersToGet, LatLngBounds bound) {
         // get markers from cache in background and after completion, place on map
@@ -597,7 +575,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                             removed.add(marker);
                             Log.i(TAG, "removed a marker");
                         }
-                        Marker cluster = map.addMarker(new MarkerOptions().title("Cluster").position(GeoHash.decode(set.getKey())));
+                        Marker cluster = map.addMarker(new MarkerOptions().title("Cluster").position(set.getValue().get(0).getPosition()));
                         setCLusterIcon(cluster);
                         cluster.setTag(removed);
                         clusters.add(cluster);

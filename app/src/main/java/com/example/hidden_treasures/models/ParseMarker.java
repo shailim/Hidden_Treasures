@@ -24,9 +24,8 @@ public class ParseMarker extends ParseObject {
         put(LOCATION, location);
         put(CREATED_BY, ParseUser.getCurrentUser());
         put(TIME, time);
+        put(SCORE, score);
     }
-
-    public String getRoomid() { return getString(ROOMID); }
 
     public String getImage() {
         return getString(IMAGE_KEY);
@@ -51,7 +50,7 @@ public class ParseMarker extends ParseObject {
     }
 
     public double getScore() {
-        return (double) getNumber(SCORE);
+        return (double)getNumber(SCORE);
     }
 
     public byte[] getIcon() { return null; }
@@ -64,7 +63,7 @@ public class ParseMarker extends ParseObject {
         put(VIEW_COUNT, num);
     }
 
-    public void setScore(int num) {
+    public void setScore(double num) {
         put(SCORE, num);
     }
 }
