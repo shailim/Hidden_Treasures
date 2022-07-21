@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.example.hidden_treasures.MainActivity;
 import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.login.LoginActivity;
@@ -42,8 +43,8 @@ public class ProfileFragment extends Fragment {
 
     TextView tvUsername;
     RecyclerView gridView;
-    Button logoutBtn;
-    List<ParseMarker> markers = new ArrayList<>();
+    LottieAnimationView logoutBtn;
+    List<MarkerEntity> markers = new ArrayList<>();
     GridAdapter adapter;
 
     public ProfileFragment() {

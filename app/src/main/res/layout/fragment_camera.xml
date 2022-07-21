@@ -17,12 +17,13 @@
         app:cardBackgroundColor="@color/white"
         app:cardCornerRadius="50dp">
 
-        <ImageButton
+        <com.airbnb.lottie.LottieAnimationView
             android:id="@+id/cameraButton"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:srcCompat="@drawable/ic_baseline_camera_alt_64"
-            android:backgroundTint="@color/white"/>
+            android:layout_height="wrap_content"
+            app:lottie_url="https://assets9.lottiefiles.com/packages/lf20_7kqkjezh.json"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"/>
     </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -24,6 +24,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.example.hidden_treasures.R;
 import com.example.hidden_treasures.login.LoginActivity;
 import com.parse.ParseUser;
@@ -34,7 +35,7 @@ public class CameraFragment extends Fragment {
 
     private final String TAG = "CameraFragment";
 
-    private ImageButton cameraButton;
+    private LottieAnimationView cameraButton;
     private File photoFile;
 
     private ActivityResultLauncher<Uri> cameraLauncher = registerForActivityResult(

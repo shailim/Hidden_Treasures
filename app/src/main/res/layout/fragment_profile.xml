@@ -9,13 +9,26 @@
     android:id="@+id/profileFragmentLayout"
     tools:context=".profile.ProfileFragment">
 
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/imageView"
+        android:layout_width="200dp"
+        android:layout_height="150dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"
+        app:lottie_url="https://assets7.lottiefiles.com/packages/lf20_nbn22ex6.json"/>
+
+
     <TextView
         android:id="@+id/tvUsername"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textAlignment="center"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:layout_editor_absoluteX="16dp" />
+        android:textSize="20sp"
+        app:layout_constraintTop_toBottomOf="@id/imageView" />
 
     <TextView
         android:id="@+id/tvMyMarkers"
@@ -24,7 +37,7 @@
         android:text="@string/my_markers"
         app:layout_constraintTop_toBottomOf="@id/tvUsername"
         android:textStyle="bold"
-        android:textSize="10sp"
+        android:textSize="14sp"
         android:textColor="@color/black"
         android:layout_marginTop="50dp"
         app:layout_constraintStart_toStartOf="parent" />
@@ -39,13 +52,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvMyMarkers" />
 
-    <Button
+
+    <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/logoutBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/logout_btn_text"
-        android:textSize="10sp"
+        android:layout_width="75dp"
+        android:layout_height="75dp"
+        android:padding="0dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:lottie_url="https://assets1.lottiefiles.com/packages/lf20_bpu0zwnq.json"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
