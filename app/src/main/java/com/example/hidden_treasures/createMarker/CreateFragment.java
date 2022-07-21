@@ -252,14 +252,7 @@ public class CreateFragment extends Fragment {
                     String id = UUID.randomUUID().toString();
                     ParseGeoPoint parseGeoPoint = new ParseGeoPoint(currentLocation.getLatitude(), currentLocation.getLongitude());
 
-
-                    saveMarkerToParse(id, title, key, parseGeoPoint, millis);
-
-                    // adding the new marker to the local database
-                    MarkerEntity newMarker = new MarkerEntity(id,
-                            millis, title, currentLocation.getLatitude(),
-                            currentLocation.getLongitude(), key, ParseUser.getCurrentUser().toString(), 0, 0);
-                    markerViewModel.insertMarker(newMarker);
+                    saveMarkerToParse(title, key, parseGeoPoint, millis);
                 }
             }
         });
@@ -294,9 +287,9 @@ public class CreateFragment extends Fragment {
     }
 
     /* Uploads com.example.hidden_treasures.markers to database in Parse */
-    private void saveMarkerToParse(String id, String title, String imageKey, ParseGeoPoint parseGeoPoint, long time) {
+    private void saveMarkerToParse(String title, String imageKey, ParseGeoPoint parseGeoPoint, long time) {
         // create a new ParseMarker object
-        ParseMarker parseMarker = new ParseMarker(id, title, imageKey, parseGeoPoint, time);
+        ParseMarker parseMarker = new ParseMarker(title, imageKey, parseGeoPoint, time, 0.1);
 
         // call the async query to save marker
         parseMarker.saveInBackground(new SaveCallback() {

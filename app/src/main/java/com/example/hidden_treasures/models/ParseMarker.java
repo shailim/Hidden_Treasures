@@ -8,7 +8,6 @@ import com.parse.ParseUser;
 
 @ParseClassName("ParseMarker")
 public class ParseMarker extends ParseObject {
-    public static final String ROOMID = "roomId";
     public static final String IMAGE_KEY = "image_key";
     public static final String TITLE = "title";
     public static final String LOCATION = "location";
@@ -19,8 +18,7 @@ public class ParseMarker extends ParseObject {
 
     public ParseMarker() {}
 
-    public ParseMarker(String id, String title, String imageKey, ParseGeoPoint location, long time) {
-        put(ROOMID, id);
+    public ParseMarker(String title, String imageKey, ParseGeoPoint location, long time, double score) {
         put(TITLE, title);
         put(IMAGE_KEY, imageKey);
         put(LOCATION, location);
@@ -43,7 +41,7 @@ public class ParseMarker extends ParseObject {
     }
 
     public String getCreatedBy() {
-        return getString(CREATED_BY);
+        return getParseUser(CREATED_BY).getObjectId();
     }
 
     public long getTime() { return (long) getNumber(TIME); }
