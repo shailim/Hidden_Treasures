@@ -64,7 +64,10 @@ import com.google.maps.android.data.Feature;
 import com.google.maps.android.data.Layer;
 import com.google.maps.android.data.geojson.GeoJsonLayer;
 import com.parse.FindCallback;
+import com.parse.FunctionCallback;
+import com.parse.GetCallback;
 import com.parse.Parse;
+import com.parse.ParseCloud;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
@@ -146,6 +149,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
         // associating marker view model with map fragment and getting the marker view model
         markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
+        updateScore();
     }
 
     @Override
@@ -203,6 +207,34 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         enableMarkerClicks();
         // listen for whenever camera is idle on map
         watchCameraIdle();
+    }
+
+    public void updateScore() {
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("time", System.currentTimeMillis());
+        ParseCloud.callFunctionInBackground("updateScore", params, new FunctionCallback<String>() {
+            @Override
+            public void done(String value, ParseException e) {
+                if (e == null) {
+                    Log.i(TAG, "successfully updated scores: " + value);
+                } else {
+                    Log.i(TAG, "did not update");
+                }
+            }
+        });
+    }
+
+    public void updateViewCount(String id, int num) {
+        ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
+        query.getInBackground(id, new GetCallback<ParseMarker>() {
+            public void done(ParseMarker marker, ParseException e) {
+                if (e == null) {
+                    marker.put("view_count", num);
+                    marker.saveInBackground();
+                    Log.i(TAG, "updated view count");
+                }
+            }
+        });
     }
 
     public int numMarkersToGet(float zoomLevel) {
@@ -270,11 +302,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     /* retrieves markers from Parse database */
     private void getMarkersFromServer(int numMarkersToGet, LatLngBounds bound, Set<String> ids) {
         ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
-        query.whereNotContainedIn("roomId", ids);
+        query.whereNotContainedIn("objectId", ids);
         query.setLimit(numMarkersToGet);
         ParseGeoPoint southwest = new ParseGeoPoint(bound.southwest.latitude, bound.southwest.longitude);
         ParseGeoPoint northeast = new ParseGeoPoint(bound.northeast.latitude, bound.northeast.longitude);
         query.whereWithinGeoBox("location", southwest, northeast);
+        query.orderByDescending("score");
         query.findInBackground(new FindCallback<ParseMarker>() {
             @Override
             public void done(List<ParseMarker> objects, ParseException e) {
@@ -302,14 +335,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             for (ParseMarker object : objects) {
                     String title = object.getTitle();
-                    String id = object.getRoomid();
+                    String id = object.getObjectId();
                     long time = object.getTime();
                     double latitude = object.getLocation().getLatitude();
                     double longitude = object.getLocation().getLongitude();
                     String imageKey = object.getImage();
                     String createdBy = object.getCreatedBy();
                     int viewCount = object.getViewCount();
-                    int score = object.getScore();
+                    double score = object.getScore();
                     MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
                     markerViewModel.insertMarker(marker);
             }
@@ -348,7 +381,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 markers.add(mapMarker);
                 addToMarkerTable(mapMarker);
             }
-            clusterMarkers();
         }
     }
 
@@ -357,11 +389,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if (objects != null && objects.size() > 0) {
             // id is used to get random images
             for (ParseMarker object : objects) {
-                if (markerIDs.contains(object.getRoomid())) {
+                if (markerIDs.contains(object.getObjectId())) {
                     continue;
                 }
                 // add ID of each marker placed on map to the list
-                markerIDs.add(object.getRoomid());
+                markerIDs.add(object.getObjectId());
                 // get the marker values
                 LatLng markerLocation = new LatLng(object.getLocation().getLatitude(), object.getLocation().getLongitude());
 
@@ -370,7 +402,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         .title(object.getTitle()));
 
                 // create an object to store marker data values
-                MarkerData data = new MarkerData(object.getRoomid(), object.getViewCount(), new Date(object.getTime()), object.getImage());
+                MarkerData data = new MarkerData(object.getObjectId(), object.getViewCount(), new Date(object.getTime()), object.getImage());
                 mapMarker.setTag(data);
                 if (object.getIcon() != null) {
                     byte[] bytes = object.getIcon();
@@ -378,10 +410,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     mapMarker.setIcon(BitmapDescriptorFactory.fromBitmap(icon));
                     Log.i(TAG, "icon already created");
                 } else {
-                    setMarkerIcon(mapMarker, object.getImage(), object.getRoomid());
+                    setMarkerIcon(mapMarker, object.getImage(), object.getObjectId());
                 }
                 markers.add(mapMarker);
                 addToMarkerTable(mapMarker);
+            }
+            if (objects.size() > 5) {
+                clusterMarkers();
             }
         }
     }
@@ -452,9 +487,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         Marker newMarker = map.addMarker(new MarkerOptions()
                 .position(location)
                 .title(marker.getTitle()));
-        MarkerData data = new MarkerData(marker.getRoomid(), marker.getViewCount(), new Date(marker.getTime()), marker.getImage());
+        MarkerData data = new MarkerData(marker.getObjectId(), marker.getViewCount(), new Date(marker.getTime()), marker.getImage());
         newMarker.setTag(data);
-        setMarkerIcon(newMarker, marker.getImage(), marker.getRoomid());
+        setMarkerIcon(newMarker, marker.getImage(), marker.getObjectId());
         Log.i(TAG, "moving camera to new marker");
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(location, 13));
     }
@@ -468,7 +503,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             public boolean onMarkerClick(@NonNull Marker marker) {
                 if (marker.getTag() != null && marker.getTag() instanceof MarkerData) {
                     MarkerData data = (MarkerData) marker.getTag();
-                    markerViewModel.updateViewCount(data.getId(), data.getViewCount());
+                    updateViewCount(data.getId(), data.getViewCount()+1);
                     // to set marker detail as a child fragment
                     FragmentManager childFragMan = getChildFragmentManager();
                     FragmentTransaction childFragTrans = childFragMan.beginTransaction();
@@ -562,8 +597,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                             removed.add(marker);
                             Log.i(TAG, "removed a marker");
                         }
-                        // TODO: get the center point of the geohash bound and set cluster position to that
-                        Marker cluster = map.addMarker(new MarkerOptions().title("Cluster").position(set.getValue().get(0).getPosition()));
+                        Marker cluster = map.addMarker(new MarkerOptions().title("Cluster").position(GeoHash.decode(set.getKey())));
                         setCLusterIcon(cluster);
                         cluster.setTag(removed);
                         clusters.add(cluster);

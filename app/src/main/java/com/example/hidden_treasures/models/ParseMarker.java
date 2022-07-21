@@ -52,8 +52,8 @@ public class ParseMarker extends ParseObject {
         return (int) getNumber(VIEW_COUNT);
     }
 
-    public int getScore() {
-        return (int) getNumber(SCORE);
+    public double getScore() {
+        return (double) getNumber(SCORE);
     }
 
     public byte[] getIcon() { return null; }

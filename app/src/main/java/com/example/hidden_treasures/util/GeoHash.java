@@ -56,6 +56,14 @@ public class GeoHash {
         return geohash.toString();
     }
 
+    // get the center of the geohash cell
+    public static LatLng decode(String geohash) {
+        LatLngBounds bound = bounds(geohash);
+        double latitude = Math.abs(bound.northeast.latitude - bound.southwest.latitude) / 2 + bound.southwest.latitude;
+        double longitude = Math.abs(bound.northeast.longitude - bound.southwest.longitude) / 2 + bound.southwest.longitude;
+       return new LatLng(latitude, longitude);
+    }
+
 
     public static LatLngBounds bounds(String geohash) {
         boolean evenBit = true;
