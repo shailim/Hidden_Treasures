@@ -45,9 +45,9 @@ public class MarkerEntityRepository {
         });
     }
 
-    public void delete(double swLat, double swLong, double neLat, double neLong, String userid) {
+    public void delete(double swLat, double swLong, double neLat, double neLong) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            markerEntityDao.deleteAll(swLat, swLong, neLat, neLong, userid);
+            markerEntityDao.deleteAll(swLat, swLong, neLat, neLong, ParseUser.getCurrentUser().getObjectId());
         });
     }
 

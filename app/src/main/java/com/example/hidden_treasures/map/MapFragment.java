@@ -118,7 +118,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private Set<String> markerIDs = new HashSet<>();
     private List<Marker> markers = new ArrayList<>();
-    private List<Marker> removedMarkers = new ArrayList<>();
     private GoogleMap map;
 
     private LatLng lastExploredLocation = null;
@@ -210,6 +209,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         watchCameraIdle();
     }
 
+    // calls parse cloud code function to update scores of markers
     public void updateScore() {
         HashMap<String, Object> params = new HashMap<>();
         params.put("time", System.currentTimeMillis());
@@ -225,6 +225,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
+    // updates marker's view count when clicked on
     public void updateViewCount(String id, int num) {
         ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
         query.getInBackground(id, new GetCallback<ParseMarker>() {
@@ -238,6 +239,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
+    // determines the number of markers to return accoding to the zoom level
     public int numMarkersToGet(float zoomLevel) {
         if (zoomLevel < 11) {
             return 50;
@@ -294,7 +296,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     // place onto map, again checking ids for repeats
                     placeParseMarkersOnMap(objects);
                     // remove markers in this area from cache
-                    markerViewModel.delete(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, ParseUser.getCurrentUser().getObjectId());
+                    markerViewModel.delete(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude);
                     // store these new ones into cache
                     storeNewMarkers(objects);
                 }
@@ -311,21 +313,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     /* Stores newly retrieved markers into cache */
     private void storeNewMarkers(List<ParseMarker> objects) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            for (ParseMarker object : objects) {
-                    String title = object.getTitle();
-                    String id = object.getObjectId();
-                    long time = object.getTime();
-                    double latitude = object.getLocation().getLatitude();
-                    double longitude = object.getLocation().getLongitude();
-                    String imageKey = object.getImage();
-                    String createdBy = object.getCreatedBy();
-                    int viewCount = object.getViewCount();
-                    double score = object.getScore();
-                    MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
-                    markerViewModel.insertMarker(marker);
-            }
-        });
+        markerViewModel.storeNewMarkers(objects);
     }
 
     /* Using MarkerEntity instead of ParseMarker, Creates new markers and places them on the map */
@@ -363,7 +351,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    /* Using MarkerEntity instead of ParseMarker, Creates new com.example.hidden_treasures.markers and places them on the map */
+    /* Using ParseMarker instead of MarkerEntity, Creates new markers and places them on the map */
     private void placeParseMarkersOnMap(List<ParseMarker> objects) {
         if (objects != null && objects.size() > 0) {
             // id is used to get random images
@@ -402,30 +390,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     // according to the geohash of the marker, stores it into the marker table
     private void addToMarkerTable(Marker marker) {
-        // get geohash of marker
-        // TODO: when uploading markers, generate their geohash, for testing I'm just generating here
-        String hash = GeoHash.encode(marker.getPosition().latitude, marker.getPosition().longitude, 7);
-        // if an entry for the geohash prefix of 4 characters doesn't exist
-        if (markerTable.get(hash.substring(0, 2)) == null) {
-            HashMap<String, List<Marker>> newTable = new HashMap<>();
-            List<Marker> list = new ArrayList<>();
-            list.add(marker);
-            // create a new hash table with a list value
-            newTable.put(hash.substring(0, 4), list);
-            markerTable.put(hash.substring(0, 2), newTable);
-            Log.i(TAG, "added new entry to first table");
-            // if an entry in the inner table for geohashes of precision length 7 doesn't exist
-        } else if (markerTable.get(hash.substring(0, 2)).get(hash.substring(0, 4)) == null) {
-            List<Marker> list = new ArrayList<>();
-            list.add(marker);
-            // create a new entry with a list value
-            markerTable.get(hash.substring(0, 2)).put(hash.substring(0, 4), list);
-            Log.i(TAG, "added new entry to second table");
-        } else {
-            // add the marker to the list
-            markerTable.get(hash.substring(0, 2)).get(hash.substring(0, 4)).add(marker);
-            Log.i(TAG, "added to list in marker table: " + hash);
-        }
+        markerTable = MapHelper.addToMarkerTable(markerTable, marker);
     }
 
     // generates a signed url to access the image in s3
@@ -484,38 +449,36 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 if (marker.getTag() != null && marker.getTag() instanceof MarkerData) {
                     MarkerData data = (MarkerData) marker.getTag();
                     updateViewCount(data.getId(), data.getViewCount()+1);
-                    // to set marker detail as a child fragment
-                    FragmentManager childFragMan = getChildFragmentManager();
-                    FragmentTransaction childFragTrans = childFragMan.beginTransaction();
-
-                    // create a new marker detail fragment instance and pass in image url, title
-                    MarkerDetailFragment markerDetailFrag = MarkerDetailFragment.newInstance(data.getImageKey(), marker.getTitle(), data.getViewCount(), data.getDate(), new ArrayList<>());
-                    // add the child fragment to current map fragment
-                    childFragTrans.add(R.id.mapFragmentLayout, markerDetailFrag);
-                    childFragTrans.addToBackStack(null);
-                    childFragTrans.commit();
+                    // show marker detail view
+                    openMarkerDetail(data.getImageKey(), marker.getTitle(), data.getViewCount(), data.getDate(), new ArrayList<>());
                 } else if (marker.getTag() instanceof ArrayList) {
                     List<Marker> markers = (ArrayList) marker.getTag();
-                    FragmentManager childFragMan = getChildFragmentManager();
-                    FragmentTransaction childFragTrans = childFragMan.beginTransaction();
-
-                    // create a new marker detail fragment instance and pass in image url, title
-                    MarkerDetailFragment markerDetailFragment = MarkerDetailFragment.newInstance(null, null, 0, null, markers);
-                    // add the child fragment to current map fragment
-                    childFragTrans.add(R.id.mapFragmentLayout, markerDetailFragment);
-                    childFragTrans.addToBackStack(null);
-                    childFragTrans.commit();
+                    // show marker detail view
+                    openMarkerDetail(null, null, 0, null, markers);
                 }
                 return false;
             }
         });
     }
 
-    int i = 0;
-    Runnable r = new Runnable() {
+    // sets the child fragment of MarkerDetailView
+    public void openMarkerDetail(String imageKey, String title, int viewCount, Date date, List<Marker> markers) {
+        // to set marker detail as a child fragment
+        FragmentManager childFragMan = getChildFragmentManager();
+        FragmentTransaction childFragTrans = childFragMan.beginTransaction();
+
+        // create a new marker detail fragment instance and pass in image url, title
+        MarkerDetailFragment markerDetailFragment = MarkerDetailFragment.newInstance(imageKey, title, viewCount, date, markers);
+        // add the child fragment to current map fragment
+        childFragTrans.add(R.id.mapFragmentLayout, markerDetailFragment);
+        childFragTrans.addToBackStack(null);
+        childFragTrans.commit();
+    }
+
+    // runs whenever camera is idle on map
+    Runnable cameraIdle = new Runnable() {
         @Override
         public void run() {
-            Log.i(TAG, "camera is idle: " + i);
             // get current camera position
             lastExploredLocation = map.getCameraPosition().target;
             lastZoomLevel = map.getCameraPosition().zoom;
@@ -556,15 +519,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         map.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
             @Override
             public void onCameraIdle() {
-                i++;
                 // remove runnable from the queue (hasn't been started yet)
-                handler.removeCallbacks(r);
+                handler.removeCallbacks(cameraIdle);
                 // add runnable to queue and run only after the set amount of time
-                handler.postDelayed(r, 500);
+                handler.postDelayed(cameraIdle, 500);
             }
         });
     }
 
+    // clusters markers according to their geohash
     public void clusterMarkers() {
             Log.i(TAG, "now onto clustering");
             String curHash = GeoHash.encode(map.getCameraPosition().target.latitude, map.getCameraPosition().target.longitude, 2);
@@ -586,6 +549,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
     }
 
+    // sets the icon for the cluster markers
     private void setCLusterIcon(Marker cluster) {
         Bitmap image = BitmapFactory.decodeResource(getResources(), R.drawable.pin_removebg_preview);
         image = Bitmap.createScaledBitmap(image, 100, 100, false);

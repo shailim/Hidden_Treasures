@@ -7,7 +7,15 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
+import com.example.hidden_treasures.models.ParseMarker;
+import com.parse.FindCallback;
+import com.parse.ParseException;
+import com.parse.ParseGeoPoint;
+import com.parse.ParseQuery;
+import com.parse.ParseUser;
+
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class MarkerViewModel extends AndroidViewModel {
@@ -46,7 +54,25 @@ public class MarkerViewModel extends AndroidViewModel {
         repository.insert(marker);
     }
 
-    public void delete(double swLat, double swLong, double neLat, double neLong, String userid) {
-        repository.delete(swLat, swLong, neLat, neLong, userid);
+    public void storeNewMarkers(List<ParseMarker> objects) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            for (ParseMarker object : objects) {
+                String title = object.getTitle();
+                String id = object.getObjectId();
+                long time = object.getTime();
+                double latitude = object.getLocation().getLatitude();
+                double longitude = object.getLocation().getLongitude();
+                String imageKey = object.getImage();
+                String createdBy = object.getCreatedBy();
+                int viewCount = object.getViewCount();
+                double score = object.getScore();
+                MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
+                repository.insert(marker);
+            }
+        });
+    }
+
+    public void delete(double swLat, double swLong, double neLat, double neLong) {
+        repository.delete(swLat, swLong, neLat, neLong);
     }
 }

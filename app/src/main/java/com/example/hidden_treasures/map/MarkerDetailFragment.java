@@ -11,7 +11,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -25,7 +24,6 @@ import com.example.hidden_treasures.markers.MarkerData;
 import com.example.hidden_treasures.util.onSwipeTouchListener;
 import com.google.android.gms.maps.model.Marker;
 
-import org.w3c.dom.Text;
 
 import java.io.Serializable;
 import java.net.URL;
