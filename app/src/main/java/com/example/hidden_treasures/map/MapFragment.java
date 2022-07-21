@@ -73,6 +73,7 @@ import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
+import com.parse.ParseUser;
 
 import org.json.JSONObject;
 
@@ -293,7 +294,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     // place onto map, again checking ids for repeats
                     placeParseMarkersOnMap(objects);
                     // remove markers in this area from cache
-                    markerViewModel.delete(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude);
+                    markerViewModel.delete(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, ParseUser.getCurrentUser().getObjectId());
                     // store these new ones into cache
                     storeNewMarkers(objects);
                 }
@@ -467,6 +468,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 .title(marker.getTitle()));
         MarkerData data = new MarkerData(marker.getObjectId(), marker.getViewCount(), new Date(marker.getTime()), marker.getImage());
         newMarker.setTag(data);
+        markerIDs.add(marker.getObjectId());
         setMarkerIcon(newMarker, marker.getImage(), marker.getObjectId());
         Log.i(TAG, "moving camera to new marker");
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(location, 13));

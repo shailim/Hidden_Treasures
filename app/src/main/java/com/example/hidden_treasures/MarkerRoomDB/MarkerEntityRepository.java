@@ -35,15 +35,19 @@ public class MarkerEntityRepository {
         return markerEntityDao.loadAllWithinBounds(swLat, swLong, neLat, neLong, numMarkersToGet);
     }
 
+    LiveData<List<MarkerEntity>> getUserMarkers() {
+        return markerEntityDao.getUserMarkers(ParseUser.getCurrentUser().getObjectId());
+    }
+
     public void insert(MarkerEntity marker) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             markerEntityDao.insert(marker);
         });
     }
 
-    public void delete(double swLat, double swLong, double neLat, double neLong) {
+    public void delete(double swLat, double swLong, double neLat, double neLong, String userid) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            markerEntityDao.deleteAll(swLat, swLong, neLat, neLong);
+            markerEntityDao.deleteAll(swLat, swLong, neLat, neLong, userid);
         });
     }
 
@@ -68,7 +72,7 @@ public class MarkerEntityRepository {
     private void updateCache() {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             long threeDaysAgo = System.currentTimeMillis() -  (3 * 86400000);
-            markerEntityDao.deleteOld( threeDaysAgo);
+            markerEntityDao.deleteOld( threeDaysAgo, ParseUser.getCurrentUser().getObjectId());
         });
     }
 }

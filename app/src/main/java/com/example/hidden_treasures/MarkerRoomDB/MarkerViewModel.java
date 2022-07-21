@@ -23,6 +23,10 @@ public class MarkerViewModel extends AndroidViewModel {
 
     public LiveData<List<MarkerEntity>> getAllMarkers() { return allMarkers; }
 
+    public LiveData<List<MarkerEntity>> getUserMarkers() {
+        return repository.getUserMarkers();
+    }
+
     // to get the next groups of com.example.hidden_treasures.markers based on location
     public List<MarkerEntity> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {
         return repository.getWithinBounds(swLat, swLong, neLat, neLong, numMarkersToGet);
@@ -42,7 +46,7 @@ public class MarkerViewModel extends AndroidViewModel {
         repository.insert(marker);
     }
 
-    public void delete(double swLat, double swLong, double neLat, double neLong) {
-        repository.delete(swLat, swLong, neLat, neLong);
+    public void delete(double swLat, double swLong, double neLat, double neLong, String userid) {
+        repository.delete(swLat, swLong, neLat, neLong, userid);
     }
 }

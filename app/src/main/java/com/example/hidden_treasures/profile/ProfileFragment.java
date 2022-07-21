@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -20,6 +21,9 @@ import android.widget.TextView;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.example.hidden_treasures.MainActivity;
+import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
+import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
+import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
 import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.login.LoginActivity;
 import com.example.hidden_treasures.map.MarkerDetailFragment;
@@ -47,6 +51,8 @@ public class ProfileFragment extends Fragment {
     List<MarkerEntity> markers = new ArrayList<>();
     GridAdapter adapter;
 
+    private MarkerViewModel viewModel;
+
     public ProfileFragment() {
         // Required empty public constructor
     }
@@ -59,6 +65,7 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        viewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
     }
 
     @Override
@@ -78,7 +85,7 @@ public class ProfileFragment extends Fragment {
 
         tvUsername.setText(ParseUser.getCurrentUser().getUsername());
 
-        // get the user's created com.example.hidden_treasures.markers
+        // get the user's markers
         queryMarkers();
 
         adapter =  new GridAdapter(getContext(), markers, getString(R.string.aws_accessID), getString(R.string.aws_secret_key), getString(R.string.s3_bucket));
@@ -106,19 +113,10 @@ public class ProfileFragment extends Fragment {
 
     /* Retrieves all the com.example.hidden_treasures.markers the user created in descending chronological order */
     public void queryMarkers() {
-        ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
-        query.whereEqualTo("created_by", ParseUser.getCurrentUser());
-        query.addDescendingOrder("createdAt");
-        query.findInBackground(new FindCallback<ParseMarker>() {
-            @Override
-            public void done(List<ParseMarker> parsePosts, ParseException e) {
-                if (parsePosts != null) {
-                    markers.addAll(parsePosts);
-                    adapter.notifyDataSetChanged();
-                } else {
-                    Log.e(TAG, "Couldn't query com.example.hidden_treasures.markers");
-                }
-            }
+        // get from cache, not from server
+        viewModel.getUserMarkers().observe(getViewLifecycleOwner(), list -> {
+            markers.addAll(list);
+            adapter.notifyDataSetChanged();
         });
     }
 
@@ -138,7 +136,9 @@ public class ProfileFragment extends Fragment {
     /* subscribe for event when user creates a new marker */
     @Subscribe
     public void onNewMarkerEvent(NewMarkerEvent event) {
-        markers.add(0, event.marker);
+        Log.i(TAG, "onNewmarkerEvent");
+        // store created markers in cache
+        markers.add(0, storeInCache(event.marker));
         adapter.notifyItemInserted(0);
         Log.i(TAG, "added new marker to list in profile");
     }

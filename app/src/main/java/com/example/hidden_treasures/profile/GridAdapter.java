@@ -16,10 +16,12 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.bumptech.glide.Glide;
+import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.map.MarkerDetailFragment;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
+import com.google.android.gms.maps.model.Marker;
 import com.parse.ParseFile;
 
 import org.greenrobot.eventbus.EventBus;
@@ -30,13 +32,13 @@ import java.util.List;
 
 public class GridAdapter extends RecyclerView.Adapter<GridAdapter.ViewHolder> {
 
-    List<ParseMarker> markers;
+    List<MarkerEntity> markers;
     Context context;
 
     private AmazonS3Client s3Client;
     private String bucketName;
 
-    public GridAdapter(Context context, List<ParseMarker> markers, String accessId, String secret, String bucket) {
+    public GridAdapter(Context context, List<MarkerEntity> markers, String accessId, String secret, String bucket) {
         this.context = context;
         this.markers = markers;
         BasicAWSCredentials credentials = new BasicAWSCredentials(accessId, secret);
@@ -54,7 +56,7 @@ public class GridAdapter extends RecyclerView.Adapter<GridAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull GridAdapter.ViewHolder holder, int position) {
-        ParseMarker marker = markers.get(position);
+        MarkerEntity marker = markers.get(position);
         holder.bind(marker);
     }
 
@@ -72,8 +74,8 @@ public class GridAdapter extends RecyclerView.Adapter<GridAdapter.ViewHolder> {
             ivMarkerImage = itemView.findViewById(R.id.ivMarkerImage);
         }
 
-        public void bind(ParseMarker marker) {
-            String imageKey = marker.getImage();
+        public void bind(MarkerEntity marker) {
+            String imageKey = marker.imageKey;
             // get a signed url for the image
             String url = getSignedUrl(imageKey).toString();
             Glide.with(context).load(url).into(ivMarkerImage);
@@ -81,7 +83,7 @@ public class GridAdapter extends RecyclerView.Adapter<GridAdapter.ViewHolder> {
                 @Override
                 public void onClick(View v) {
                     // posting new marker event
-                    EventBus.getDefault().post(new ImageClickEvent(imageKey, marker.getTitle(), marker.getViewCount(), new Date(marker.getTime())));
+                    EventBus.getDefault().post(new ImageClickEvent(imageKey, marker.title, marker.view_count, new Date(marker.createdAt)));
                 }
             });
         }
