@@ -9,30 +9,74 @@ import com.example.hidden_treasures.App;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.util.GeoHash;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.parse.FindCallback;
+import com.parse.GetCallback;
 import com.parse.Parse;
 import com.parse.ParseException;
+import com.parse.ParseGeoPoint;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class MarkerEntityRepository {
     private MarkerEntityDao markerEntityDao;
+    private LiveData<List<MarkerEntity>> allMarkers;
 
     MarkerEntityRepository(Application application) {
         AppDatabase db = AppDatabase.getDatabase(application);
         markerEntityDao = db.markerEntityDao();
+        allMarkers = markerEntityDao.getAll();
         if (ParseUser.getCurrentUser() != null) {
             updateCache();
         }
     }
 
-    List<MarkerEntity> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {
+    LiveData<List<MarkerEntity>> getAllMarkers() { return allMarkers; }
+
+    LiveData<List<MarkerEntity>> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {
         return markerEntityDao.loadAllWithinBounds(swLat, swLong, neLat, neLong, numMarkersToGet);
+    }
+
+    void getFromServer(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet, List<String> ids) {
+        Log.i("Repository", "ge");
+        // then get markers from server
+        ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
+        query.whereNotContainedIn("objectId", ids);
+        query.setLimit(numMarkersToGet);
+        ParseGeoPoint southwest = new ParseGeoPoint(swLat, swLong);
+        ParseGeoPoint northeast = new ParseGeoPoint(neLat, neLong);
+        query.whereWithinGeoBox("location", southwest, northeast);
+        query.orderByDescending("score");
+        query.findInBackground(new FindCallback<ParseMarker>() {
+            @Override
+            public void done(List<ParseMarker> objects, ParseException e) {
+                delete(swLat, swLong, neLat, neLong);
+                storeInCache(objects);
+            }
+        });
+    }
+
+    void storeInCache(List<ParseMarker> objects) {
+        for (ParseMarker object : objects) {
+            String title = object.getTitle();
+            String id = object.getObjectId();
+            long time = object.getTime();
+            double latitude = object.getLocation().getLatitude();
+            double longitude = object.getLocation().getLongitude();
+            String imageKey = object.getImage();
+            String createdBy = object.getCreatedBy();
+            int viewCount = object.getViewCount();
+            double score = object.getScore();
+            MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
+            insert(marker);
+        }
     }
 
     LiveData<List<MarkerEntity>> getUserMarkers() {
@@ -58,8 +102,15 @@ public class MarkerEntityRepository {
     }
 
     public void updateViewCount(String id, int viewCount) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            markerEntityDao.updateViewCount(id, viewCount+1);
+        ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
+        query.getInBackground(id, new GetCallback<ParseMarker>() {
+            public void done(ParseMarker marker, ParseException e) {
+                if (e == null) {
+                    marker.put("view_count", viewCount);
+                    marker.saveInBackground();
+                    Log.i("Repository", "updated view count");
+                }
+            }
         });
     }
 

@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
+import com.airbnb.lottie.L;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.parse.FindCallback;
 import com.parse.ParseException;
@@ -32,6 +33,7 @@ public class MarkerViewModel extends AndroidViewModel {
     public MarkerViewModel(@NonNull Application application) {
         super(application);
         repository = new MarkerEntityRepository(application);
+        allMarkers = repository.getAllMarkers();
     }
 
     public LiveData<List<MarkerEntity>> getAllMarkers() { return allMarkers; }
@@ -75,24 +77,6 @@ public class MarkerViewModel extends AndroidViewModel {
 
     public void insertMarker(MarkerEntity marker) {
         repository.insert(marker);
-    }
-
-    public void storeNewMarkers(List<ParseMarker> objects) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            for (ParseMarker object : objects) {
-                String title = object.getTitle();
-                String id = object.getObjectId();
-                long time = object.getTime();
-                double latitude = object.getLocation().getLatitude();
-                double longitude = object.getLocation().getLongitude();
-                String imageKey = object.getImage();
-                String createdBy = object.getCreatedBy();
-                int viewCount = object.getViewCount();
-                double score = object.getScore();
-                MarkerEntity marker = new MarkerEntity(id, time, title, latitude, longitude, imageKey, createdBy, viewCount, score);
-                repository.insert(marker);
-            }
-        });
     }
 
     public void delete(double swLat, double swLong, double neLat, double neLong) {

@@ -149,7 +149,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
         // associating marker view model with map fragment and getting the marker view model
         markerViewModel = new ViewModelProvider(this).get(MarkerViewModel.class);
-        updateScore();
+
+        markerViewModel.getAllMarkers().observe(this, markers -> {
+            //display on map
+            placeMarkerEntitiesOnMap(markers);
+        });
     }
 
     @Override
@@ -250,70 +254,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     /* retrieves markers from database, then calls a function to place com.example.hidden_treasures.markers on map */
     private void getMarkersFromCache(int numMarkersToGet, LatLngBounds bound) {
-        // get markers from cache in background and after completion, place on map
-        FutureTask<List<MarkerEntity>> futureTask = new FutureTask<>(() -> markerViewModel.getWithinBounds(bound.southwest.latitude,
-                bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, numMarkersToGet));
-        AppDatabase.databaseWriteExecutor.execute(futureTask);
-
-        // check if the task completed, otherwise wait and check again
-        while(!futureTask.isDone() && !futureTask.isCancelled()) {
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        try {
-            List<MarkerEntity> markers = futureTask.get();
-            Log.i(TAG, "list size: " + markers.size());
-            // display on map
-            placeMarkerEntitiesOnMap(markers);
-            // update the last accessed time for the markers from cache
-            updateLastAccessed(markers);
-            // then get more markers from server
-            getMarkersFromServer(numMarkersToGet, bound, markerIDs);
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    /* retrieves markers from Parse database */
-    private void getMarkersFromServer(int numMarkersToGet, LatLngBounds bound, Set<String> ids) {
-        ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
-        query.whereNotContainedIn("objectId", ids);
-        query.setLimit(numMarkersToGet);
-        ParseGeoPoint southwest = new ParseGeoPoint(bound.southwest.latitude, bound.southwest.longitude);
-        ParseGeoPoint northeast = new ParseGeoPoint(bound.northeast.latitude, bound.northeast.longitude);
-        query.whereWithinGeoBox("location", southwest, northeast);
-        query.orderByDescending("score");
-        query.findInBackground(new FindCallback<ParseMarker>() {
-            @Override
-            public void done(List<ParseMarker> objects, ParseException e) {
-                if (e == null) {
-                    // place onto map, again checking ids for repeats
-                    placeParseMarkersOnMap(objects);
-                    // remove markers in this area from cache
-                    markerViewModel.delete(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude);
-                    // store these new ones into cache
-                    storeNewMarkers(objects);
-                }
-            }
-        });
-    }
-
-    // updates the last accessed time for the each marker retrieved
-    private void updateLastAccessed(List<MarkerEntity> markers ) {
-        for (MarkerEntity marker : markers) {
-            markerViewModel.updateLastAccessed(marker.objectId);
-        }
-    }
-
-    /* Stores newly retrieved markers into cache */
-    private void storeNewMarkers(List<ParseMarker> objects) {
-        markerViewModel.storeNewMarkers(objects);
+        markerViewModel.getFromCache(bound.southwest.latitude, bound.southwest.longitude, bound.northeast.latitude, bound.northeast.longitude, numMarkersToGet);
     }
 
     /* Using MarkerEntity instead of ParseMarker, Creates new markers and places them on the map */

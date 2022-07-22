@@ -13,10 +13,13 @@ import java.util.List;
 @Dao
 public interface MarkerEntityDao {
     @Query("SELECT * FROM marker_entity")
-    List<MarkerEntity> getAll();
+    LiveData<List<MarkerEntity>> getAll();
+
+    @Query("SELECT * FROM marker_entity WHERE objectId = :id")
+    MarkerEntity getMarker(String id);
 
     @Query("SELECT * FROM marker_entity WHERE latitude > :swLat AND latitude < :neLat AND longitude > :swLong AND longitude < :neLong ORDER BY score DESC LIMIT :numMarkersToGet")
-    List<MarkerEntity> loadAllWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet);
+    LiveData<List<MarkerEntity>> loadAllWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet);
 
     @Query("SELECT * FROM marker_entity WHERE created_by = :userid ORDER BY created_at DESC")
     LiveData<List<MarkerEntity>> getUserMarkers(String userid);
