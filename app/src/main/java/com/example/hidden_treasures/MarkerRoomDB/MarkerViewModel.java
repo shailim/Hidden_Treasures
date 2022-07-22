@@ -17,6 +17,11 @@ import com.parse.ParseUser;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 public class MarkerViewModel extends AndroidViewModel {
 
@@ -35,9 +40,27 @@ public class MarkerViewModel extends AndroidViewModel {
         return repository.getUserMarkers();
     }
 
-    // to get the next groups of com.example.hidden_treasures.markers based on location
-    public List<MarkerEntity> getWithinBounds(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {
-        return repository.getWithinBounds(swLat, swLong, neLat, neLong, numMarkersToGet);
+
+    public LiveData<List<MarkerEntity>> getFromCache(double swLat, double swLong, double neLat, double neLong, int numMarkersToGet) {
+        Callable<LiveData<List<MarkerEntity>>> callable = () -> repository.getWithinBounds(swLat, swLong, neLat, neLong, numMarkersToGet);
+
+        Future<LiveData<List<MarkerEntity>>> future = AppDatabase.databaseWriteExecutor.submit(callable);
+        try {
+            allMarkers = future.get();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        List<String> ids = new ArrayList<>();
+        if (allMarkers.getValue() != null) {
+            for (MarkerEntity marker : allMarkers.getValue()) {
+                ids.add(marker.objectId);
+                updateLastAccessed(marker.objectId);
+            }
+        }
+        repository.getFromServer(swLat, swLong, neLat, neLong, numMarkersToGet, ids);
+        return allMarkers;
     }
 
     public void setIcon(byte[] icon, String id) {
