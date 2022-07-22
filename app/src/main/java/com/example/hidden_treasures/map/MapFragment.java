@@ -382,9 +382,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 markers.add(mapMarker);
                 addToMarkerTable(mapMarker);
             }
-            if (objects.size() > 5) {
-                clusterMarkers();
-            }
         }
     }
 
@@ -481,11 +478,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         public void run() {
             // get current camera position
             lastExploredLocation = map.getCameraPosition().target;
-            lastZoomLevel = map.getCameraPosition().zoom;
 
-            if (lastZoomLevel > 11) {
-                deCluster();
-            }
             // when camera idle and camera out of previous bounds or zoomed in more than twice or zoomed out more than twice
             if (lastZoomIn - map.getCameraPosition().zoom < -2 || lastZoomIn - map.getCameraPosition().zoom > 2) {
                 lastZoomIn = map.getCameraPosition().zoom;
@@ -493,9 +486,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 return;
             } else if (!lastExploredBounds.contains(lastExploredLocation)) {
                 updateMap();
-            } else if (lastZoomLevel <= 11) {
-                clusterMarkers();
             }
+            // if zoom changed from zoomed in to out, cluster markers
+            if (map.getCameraPosition().zoom <= 11 && lastZoomLevel > map.getCameraPosition().zoom) {
+                clusterMarkers();
+            // if zoom changed from zoomed out to in, de-cluster markers
+            } else if (map.getCameraPosition().zoom > 11 && lastZoomLevel < map.getCameraPosition().zoom) {
+                deCluster();
+            }
+            lastZoomLevel = map.getCameraPosition().zoom;
         }
     };
 
@@ -541,7 +540,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                             Log.i(TAG, "removed a marker");
                         }
                         Marker cluster = map.addMarker(new MarkerOptions().title("Cluster").position(set.getValue().get(0).getPosition()));
-                        setCLusterIcon(cluster);
+                        setCLusterIcon(cluster, removed.size());
                         cluster.setTag(removed);
                         clusters.add(cluster);
                     }
@@ -550,11 +549,25 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     // sets the icon for the cluster markers
-    private void setCLusterIcon(Marker cluster) {
-        Bitmap image = BitmapFactory.decodeResource(getResources(), R.drawable.pin_removebg_preview);
-        image = Bitmap.createScaledBitmap(image, 100, 100, false);
+    private void setCLusterIcon(Marker cluster, int num) {
+        int icon;
+        int size;
+        if (num < 5) {
+            icon = R.drawable.lightpurplecircle;
+            size = 80;
+        } else if (num < 7) {
+            icon = R.drawable.purplecircle;
+            size = 95;
+        } else {
+            icon = R.drawable.indigocircle;
+            size = 105;
+        }
+        Bitmap image = BitmapFactory.decodeResource(getResources(), icon);
+        image = Bitmap.createScaledBitmap(image, size, size, false);
         image = BitmapFormat.getCircularBitmap(image);
         cluster.setIcon(BitmapDescriptorFactory.fromBitmap(image));
+        // setting opacity
+        cluster.setAlpha(0.4f);
     }
 
     // removes clusters and re-shows markers
