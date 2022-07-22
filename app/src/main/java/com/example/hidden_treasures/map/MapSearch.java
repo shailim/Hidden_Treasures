@@ -66,7 +66,7 @@ public class MapSearch {
                     mapFrag.getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            mapFrag.map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), 10));
+                            mapFrag.map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), 12));
                         }
                     });
                 }

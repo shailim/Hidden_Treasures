@@ -354,10 +354,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 updateMap();
             }
             // if zoom changed from zoomed in to out, cluster markers
-            if (map.getCameraPosition().zoom <= 11 && lastZoomLevel > map.getCameraPosition().zoom) {
+            if (map.getCameraPosition().zoom <= 11 && lastZoomLevel > 11) {
                 MapCluster.clusterMarkers(MapFragment.this);
             // if zoom changed from zoomed out to in, de-cluster markers
-            } else if (map.getCameraPosition().zoom > 11 && lastZoomLevel < map.getCameraPosition().zoom) {
+            } else if (map.getCameraPosition().zoom > 11 && lastZoomLevel <= 11) {
                 MapCluster.deCluster(MapFragment.this);
             }
             lastZoomLevel = map.getCameraPosition().zoom;
