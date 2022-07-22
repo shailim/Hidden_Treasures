@@ -3,6 +3,8 @@ package com.example.hidden_treasures.map;
 import android.util.Log;
 
 import com.example.hidden_treasures.util.GeoHash;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 
 import java.util.ArrayList;
@@ -56,5 +58,24 @@ public class MapHelper {
         // add the marker to the list
         markerTable.get(hash.substring(0, 2)).get(hash.substring(0, 4)).add(marker);
         Log.i(TAG, "added to list in marker table: " + hash);
+    }
+
+    //returns number of markers to query according to zoom level
+    public static int numMarkersToGet(float zoom) {
+        if (zoom < 11) {
+            return 50;
+        } else {
+            return 10000;
+        }
+    }
+
+    public static LatLngBounds getOuterBound(LatLngBounds curBound) {
+        double cellHeight = Math.abs(curBound.northeast.latitude - curBound.southwest.latitude);
+        double cellWidth = Math.abs(curBound.northeast.longitude - curBound.southwest.longitude);
+        // get the bounds for the whole area
+        LatLng northeast = new LatLng(curBound.northeast.latitude + cellHeight, curBound.northeast.longitude + cellWidth);
+        LatLng southwest = new LatLng(curBound.southwest.latitude - cellHeight, curBound.southwest.longitude - cellWidth);
+        LatLngBounds outerBound = new LatLngBounds(southwest, northeast);
+        return outerBound;
     }
 }

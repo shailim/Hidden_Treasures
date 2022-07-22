@@ -118,15 +118,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private Set<String> markerIDs = new HashSet<>();
     private List<Marker> markers = new ArrayList<>();
-    private GoogleMap map;
+    protected GoogleMap map;
 
     private LatLng lastExploredLocation = null;
     private float lastZoomLevel = 0;
     private float lastZoomIn = 0;
     private LatLngBounds lastExploredBounds = null;
 
-    private HashMap<String, HashMap<String, List<Marker>>> markerTable = new HashMap<>();
-    private List<Marker> clusters = new ArrayList<>();
+    protected HashMap<String, HashMap<String, List<Marker>>> markerTable = new HashMap<>();
+    protected List<Marker> clusters = new ArrayList<>();
 
 
     public MapFragment() {
@@ -159,7 +159,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_map, container, false);
 
@@ -173,7 +172,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
 
         // enable autocomplete search for locations
-        setupAutocompleteSearch();
+        MapSearch.setupAutocompleteSearch(this);
 
         // return the layout view
         return view;
@@ -205,51 +204,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(37.4530, -122.1817), 13));
         }
         lastExploredBounds = map.getProjection().getVisibleRegion().latLngBounds;
-        // get an initial set of markers
-        getMarkersFromCache(numMarkersToGet(map.getCameraPosition().zoom), map.getProjection().getVisibleRegion().latLngBounds);
         // enables any markers on the map to be clickable
         enableMarkerClicks();
         // listen for whenever camera is idle on map
         watchCameraIdle();
     }
 
-    // calls parse cloud code function to update scores of markers
-    public void updateScore() {
-        HashMap<String, Object> params = new HashMap<>();
-        params.put("time", System.currentTimeMillis());
-        ParseCloud.callFunctionInBackground("updateScore", params, new FunctionCallback<String>() {
-            @Override
-            public void done(String value, ParseException e) {
-                if (e == null) {
-                    Log.i(TAG, "successfully updated scores: " + value);
-                } else {
-                    Log.i(TAG, "did not update");
-                }
-            }
-        });
-    }
-
     // updates marker's view count when clicked on
     public void updateViewCount(String id, int num) {
-        ParseQuery<ParseMarker> query = ParseQuery.getQuery(ParseMarker.class);
-        query.getInBackground(id, new GetCallback<ParseMarker>() {
-            public void done(ParseMarker marker, ParseException e) {
-                if (e == null) {
-                    marker.put("view_count", num);
-                    marker.saveInBackground();
-                    Log.i(TAG, "updated view count");
-                }
-            }
-        });
-    }
-
-    // determines the number of markers to return accoding to the zoom level
-    public int numMarkersToGet(float zoomLevel) {
-        if (zoomLevel < 11) {
-            return 50;
-        } else {
-            return 10000;
-        }
+        markerViewModel.updateViewCount(id, num);
     }
 
     /* retrieves markers from database, then calls a function to place com.example.hidden_treasures.markers on map */
@@ -260,7 +223,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     /* Using MarkerEntity instead of ParseMarker, Creates new markers and places them on the map */
     private void placeMarkerEntitiesOnMap(List<MarkerEntity> objects) {
         if (objects != null && objects.size() > 0) {
-            // id is used to get random images
             for (MarkerEntity object : objects) {
                 if (markerIDs.contains(object.objectId)) {
                     continue;
@@ -270,7 +232,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
                 // get the marker values
                 LatLng markerLocation = new LatLng(object.latitude, object.longitude);
-
                 Marker mapMarker = map.addMarker(new MarkerOptions()
                         .position(markerLocation)
                         .title(object.title));
@@ -282,43 +243,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         byte[] bytes = object.icon;
                         Bitmap icon = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
                         mapMarker.setIcon(BitmapDescriptorFactory.fromBitmap(icon));
-                        Log.i(TAG, "icon already created");
                 } else {
                     setMarkerIcon(mapMarker, object.imageKey, object.objectId);
-                }
-                markers.add(mapMarker);
-                addToMarkerTable(mapMarker);
-            }
-        }
-    }
-
-    /* Using ParseMarker instead of MarkerEntity, Creates new markers and places them on the map */
-    private void placeParseMarkersOnMap(List<ParseMarker> objects) {
-        if (objects != null && objects.size() > 0) {
-            // id is used to get random images
-            for (ParseMarker object : objects) {
-                if (markerIDs.contains(object.getObjectId())) {
-                    continue;
-                }
-                // add ID of each marker placed on map to the list
-                markerIDs.add(object.getObjectId());
-                // get the marker values
-                LatLng markerLocation = new LatLng(object.getLocation().getLatitude(), object.getLocation().getLongitude());
-
-                Marker mapMarker = map.addMarker(new MarkerOptions()
-                        .position(markerLocation)
-                        .title(object.getTitle()));
-
-                // create an object to store marker data values
-                MarkerData data = new MarkerData(object.getObjectId(), object.getViewCount(), new Date(object.getTime()), object.getImage());
-                mapMarker.setTag(data);
-                if (object.getIcon() != null) {
-                    byte[] bytes = object.getIcon();
-                    Bitmap icon = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    mapMarker.setIcon(BitmapDescriptorFactory.fromBitmap(icon));
-                    Log.i(TAG, "icon already created");
-                } else {
-                    setMarkerIcon(mapMarker, object.getImage(), object.getObjectId());
                 }
                 markers.add(mapMarker);
                 addToMarkerTable(mapMarker);
@@ -419,7 +345,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         public void run() {
             // get current camera position
             lastExploredLocation = map.getCameraPosition().target;
-
             // when camera idle and camera out of previous bounds or zoomed in more than twice or zoomed out more than twice
             if (lastZoomIn - map.getCameraPosition().zoom < -2 || lastZoomIn - map.getCameraPosition().zoom > 2) {
                 lastZoomIn = map.getCameraPosition().zoom;
@@ -430,10 +355,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
             // if zoom changed from zoomed in to out, cluster markers
             if (map.getCameraPosition().zoom <= 11 && lastZoomLevel > map.getCameraPosition().zoom) {
-                clusterMarkers();
+                MapCluster.clusterMarkers(MapFragment.this);
             // if zoom changed from zoomed out to in, de-cluster markers
             } else if (map.getCameraPosition().zoom > 11 && lastZoomLevel < map.getCameraPosition().zoom) {
-                deCluster();
+                MapCluster.deCluster(MapFragment.this);
             }
             lastZoomLevel = map.getCameraPosition().zoom;
         }
@@ -441,17 +366,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     // calculates new area to retrieve markers and queries for markers
     private void updateMap() {
+        lastExploredBounds = map.getProjection().getVisibleRegion().latLngBounds;
         // get the area around screen, calculate height and width of screen lat/lng
-        LatLngBounds curBound = map.getProjection().getVisibleRegion().latLngBounds;
-        lastExploredBounds = curBound;
-        double cellHeight = Math.abs(curBound.northeast.latitude - curBound.southwest.latitude);
-        double cellWidth = Math.abs(curBound.northeast.longitude - curBound.southwest.longitude);
-        // get the bounds for the whole area
-        LatLng northeast = new LatLng(curBound.northeast.latitude + cellHeight, curBound.northeast.longitude + cellWidth);
-        LatLng southwest = new LatLng(curBound.southwest.latitude - cellHeight, curBound.southwest.longitude - cellWidth);
-        LatLngBounds outerBound = new LatLngBounds(southwest, northeast);
-        // query local with the two bound points (if zoom is < 11, get 50, else get all)
-        getMarkersFromCache(numMarkersToGet(lastZoomLevel), outerBound);
+        // then query local with the two bound points (if zoom is < 11, get 50, else get all)
+        getMarkersFromCache(MapHelper.numMarkersToGet(lastZoomLevel), MapHelper.getOuterBound(lastExploredBounds));
     }
 
     /* Adds a listener to track when camera is idle on map */
@@ -466,115 +384,4 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
         });
     }
-
-    // clusters markers according to their geohash
-    public void clusterMarkers() {
-            Log.i(TAG, "now onto clustering");
-            String curHash = GeoHash.encode(map.getCameraPosition().target.latitude, map.getCameraPosition().target.longitude, 2);
-            if (markerTable.get(curHash) != null) {
-                for (Map.Entry<String, List<Marker>> set : markerTable.get(curHash).entrySet()) {
-                    if (set.getValue() != null && set.getValue().size() > 2) {
-                        List<Marker> removed = new ArrayList<>();
-                        for (Marker marker : set.getValue()) {
-                            marker.setVisible(false);
-                            removed.add(marker);
-                            Log.i(TAG, "removed a marker");
-                        }
-                        Marker cluster = map.addMarker(new MarkerOptions().title("Cluster").position(set.getValue().get(0).getPosition()));
-                        setCLusterIcon(cluster, removed.size());
-                        cluster.setTag(removed);
-                        clusters.add(cluster);
-                    }
-                }
-            }
-    }
-
-    // sets the icon for the cluster markers
-    private void setCLusterIcon(Marker cluster, int num) {
-        int icon;
-        int size;
-        if (num < 5) {
-            icon = R.drawable.lightpurplecircle;
-            size = 80;
-        } else if (num < 7) {
-            icon = R.drawable.purplecircle;
-            size = 95;
-        } else {
-            icon = R.drawable.indigocircle;
-            size = 105;
-        }
-        Bitmap image = BitmapFactory.decodeResource(getResources(), icon);
-        image = Bitmap.createScaledBitmap(image, size, size, false);
-        image = BitmapFormat.getCircularBitmap(image);
-        cluster.setIcon(BitmapDescriptorFactory.fromBitmap(image));
-        // setting opacity
-        cluster.setAlpha(0.4f);
-    }
-
-    // removes clusters and re-shows markers
-    private void deCluster() {
-        for (Marker cluster : clusters) {
-            // re-show all the markers
-            for (Marker marker : (List<Marker>) cluster.getTag()) {
-                marker.setVisible(true);
-            }
-            // remove the cluster
-            cluster.remove();
-        }
-        // empty the clusters list
-        clusters.clear();
-    }
-
-    /* Uses Google's Places API to display place name for autocomplete searching */
-    public void setupAutocompleteSearch() {
-        // Initialize the Places SDK
-        Places.initialize(getApplicationContext(), getString(R.string.maps_api_key));
-
-        // Initialize the AutocompleteSupportFragment
-        AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
-                getChildFragmentManager().findFragmentById(R.id.autocomplete_fragment);
-
-        // Specify the types of place data to return.
-        autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.NAME));
-
-        // Set up a PlaceSelectionListener to handle the response.
-        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
-            @Override
-            public void onPlaceSelected(@NonNull Place place) {
-                moveToSearchedLocation(place);
-            }
-
-            @Override
-            public void onError(@NonNull Status status) {
-                Log.i(TAG, "An error occurred: " + status);
-            }
-        });
-    }
-
-    private void moveToSearchedLocation(@NonNull Place place) {
-        // create a Geocoder object to get coordinates of place that user searched for
-        Geocoder geocoder = new Geocoder(getContext(), new Locale("en"));
-        try {
-            List<Address> list = geocoder.getFromLocationName(place.getName(), 1);
-            if (!list.isEmpty()) {
-                    // get the coordinates of the location
-                    Double latitude = list.get(0).getLatitude();
-                    Double longitude = list.get(0).getLongitude();
-
-                    // move map camera position to the location
-                    // right now, it's on a different thread so have to do it on the UI thread
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude), 10));
-                            }
-                        });
-                    }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
 }
