@@ -22,9 +22,15 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.bumptech.glide.Glide;
 import com.example.hidden_treasures.R;
+import com.example.hidden_treasures.collections.ParseCollection;
 import com.example.hidden_treasures.profile.ProfileFragment;
 import com.example.hidden_treasures.util.onSwipeTouchListener;
 import com.google.android.gms.maps.model.Marker;
+import com.parse.FindCallback;
+import com.parse.ParseException;
+import com.parse.ParseQuery;
+import com.parse.ParseUser;
+import com.parse.SaveCallback;
 
 
 import java.io.Serializable;
@@ -45,12 +51,14 @@ public class MarkerDetailFragment extends Fragment {
     private static final String VIEW_COUNT = "viewCount";
     private static final String DATE = "date";
     private static final String LIST = "list";
+    private static final String ID = "id";
 
     private String mediaKey;
     private String title;
     private int viewCount;
     private Date date;
     private List<Marker> list;
+    private String id;
 
     private int curPos = 0;
 
@@ -65,7 +73,7 @@ public class MarkerDetailFragment extends Fragment {
 
 
     /* a url for image and the title for marker are passed as arguments from Map fragment */
-    public static MarkerDetailFragment newInstance(String mediaKey, String title, int viewCount, Date date, List<Marker> list) {
+    public static MarkerDetailFragment newInstance(String id, String mediaKey, String title, int viewCount, Date date, List<Marker> list) {
         MarkerDetailFragment fragment = new MarkerDetailFragment();
         Bundle args = new Bundle();
         args.putString(MEDIA_KEY, mediaKey);
@@ -73,6 +81,7 @@ public class MarkerDetailFragment extends Fragment {
         args.putInt(VIEW_COUNT, viewCount);
         args.putSerializable(DATE, date);
         args.putSerializable(LIST, (Serializable) list);
+        args.putString(ID, id);
         fragment.setArguments(args);
         return fragment;
     }
@@ -86,6 +95,7 @@ public class MarkerDetailFragment extends Fragment {
             viewCount = getArguments().getInt(VIEW_COUNT);
             date = (Date) getArguments().getSerializable(DATE);
             list = (ArrayList) getArguments().getSerializable(LIST);
+            id = getArguments().getString(ID);
             Log.i(TAG, "data: " + viewCount + " " + date);
         }
         BasicAWSCredentials credentials = new BasicAWSCredentials(getString(R.string.aws_accessID), getString(R.string.aws_secret_key));
@@ -151,9 +161,52 @@ public class MarkerDetailFragment extends Fragment {
         pinBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(getContext(), "Saved to collection", Toast.LENGTH_SHORT).show();
+                saveToCollection();
             }
         });
+    }
+
+    // saves the marker to the user's collection
+    private void saveToCollection() {
+        if (id != null) {
+            // query to get marker from parse
+            ParseQuery<ParseMarker> markerQuery = ParseQuery.getQuery(ParseMarker.class);
+            try {
+                // first get the marker
+                ParseMarker marker = markerQuery.get(id);
+                // see if it's already in te user's collection
+                ParseQuery<ParseCollection> collectionQuery = ParseQuery.getQuery(ParseCollection.class);
+                collectionQuery.whereEqualTo("marker", marker);
+                collectionQuery.whereEqualTo("userId", ParseUser.getCurrentUser().getObjectId());
+                collectionQuery.findInBackground(new FindCallback<ParseCollection>() {
+                    @Override
+                    public void done(List<ParseCollection> objects, ParseException e) {
+                        if (e == null) {
+                            if (objects.size() == 0) {
+                                // if the marker isn't already saved to the user's collection, save it
+                                ParseCollection collObject = new ParseCollection(marker, ParseUser.getCurrentUser().getObjectId());
+                                collObject.saveInBackground(new SaveCallback() {
+                                    @Override
+                                    public void done(ParseException e) {
+                                        if (e == null) {
+                                            Toast.makeText(getContext(), "Saved to collection!", Toast.LENGTH_SHORT).show();
+                                        } else {
+                                            Toast.makeText(getContext(), "Unable to save to collection", Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
+                                });
+                            } else {
+                                Toast.makeText(getContext(), "Already in collection", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Toast.makeText(getContext(), "Sorry, an error occurred while trying to save", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /* When user swipes down, the marker detail is removed and returns to map fragment */

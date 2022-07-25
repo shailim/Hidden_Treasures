@@ -264,11 +264,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     MarkerData data = (MarkerData) marker.getTag();
                     updateViewCount(data.getId(), data.getViewCount()+1);
                     // show marker detail view
-                    openMarkerDetail(data.getImageKey(), marker.getTitle(), data.getViewCount(), data.getDate(), new ArrayList<>());
+                    openMarkerDetail(data.getId(), data.getImageKey(), marker.getTitle(), data.getViewCount(), data.getDate(), new ArrayList<>());
                 } else if (marker.getTag() instanceof ArrayList) {
                     List<Marker> markers = (ArrayList) marker.getTag();
                     // show marker detail view
-                    openMarkerDetail(null, null, 0, null, markers);
+                    openMarkerDetail(null, null, null, 0, null, markers);
                 }
                 return false;
             }
@@ -276,13 +276,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     // sets the child fragment of MarkerDetailView
-    public void openMarkerDetail(String imageKey, String title, int viewCount, Date date, List<Marker> markers) {
+    public void openMarkerDetail(String id, String imageKey, String title, int viewCount, Date date, List<Marker> markers) {
         // to set marker detail as a child fragment
         FragmentManager childFragMan = getChildFragmentManager();
         FragmentTransaction childFragTrans = childFragMan.beginTransaction();
 
         // create a new marker detail fragment instance and pass in image url, title
-        MarkerDetailFragment markerDetailFragment = MarkerDetailFragment.newInstance(imageKey, title, viewCount, date, markers);
+        MarkerDetailFragment markerDetailFragment = MarkerDetailFragment.newInstance(id, imageKey, title, viewCount, date, markers);
         // add the child fragment to current map fragment
         childFragTrans.add(R.id.mapFragmentLayout, markerDetailFragment);
         childFragTrans.addToBackStack(null);
