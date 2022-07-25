@@ -228,10 +228,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 marker.setIcon(BitmapDescriptorFactory.fromBitmap(resource));
 
                 // save the bitmap icon to the database
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                resource.compress(Bitmap.CompressFormat.PNG, 0, stream);
-                byte[] bytes = stream.toByteArray();
-                markerViewModel.setIcon(bytes, id);
+                try {
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    resource.compress(Bitmap.CompressFormat.PNG, 0, stream);
+                    byte[] bytes = stream.toByteArray();
+                    markerViewModel.setIcon(bytes, id);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             @Override
             public void onLoadCleared(@Nullable Drawable placeholder) {
