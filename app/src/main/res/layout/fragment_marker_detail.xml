@@ -78,5 +78,16 @@
 
     </androidx.cardview.widget.CardView>
 
+    <ImageButton
+        android:id="@+id/pinToCollectionBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_margin="10dp"
+        android:background="#00FFFFFF"
+        android:backgroundTint="#FFFFFF"
+        android:src="@drawable/ic_baseline_push_pin_24" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

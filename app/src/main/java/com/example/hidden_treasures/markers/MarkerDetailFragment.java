@@ -11,8 +11,10 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.amazonaws.HttpMethod;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -20,6 +22,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.bumptech.glide.Glide;
 import com.example.hidden_treasures.R;
+import com.example.hidden_treasures.profile.ProfileFragment;
 import com.example.hidden_treasures.util.onSwipeTouchListener;
 import com.google.android.gms.maps.model.Marker;
 
@@ -54,6 +57,7 @@ public class MarkerDetailFragment extends Fragment {
     private ImageView ivMarkerDetail;
     private TextView tvTitle;
     private TextView tvDate;
+    private ImageButton pinBtn;
 
     public MarkerDetailFragment() {
         // Required empty public constructor
@@ -106,6 +110,7 @@ public class MarkerDetailFragment extends Fragment {
         ivMarkerDetail = view.findViewById(R.id.ivMarkerDetail);
         tvTitle = view.findViewById(R.id.tvTitle);
         tvDate = view.findViewById(R.id.tvDate);
+        pinBtn = view.findViewById(R.id.pinToCollectionBtn);
 
         if (list.size() == 0) {
             // set the values to the views
@@ -128,6 +133,8 @@ public class MarkerDetailFragment extends Fragment {
         }
         // set swipe listener for swiping down
         setSwipeListener(view);
+        // set any button click listeners
+        setOnClickListeners();
     }
 
     // generates a signed url to access the image in s3
@@ -136,6 +143,17 @@ public class MarkerDetailFragment extends Fragment {
                 new GeneratePresignedUrlRequest(getString(R.string.s3_bucket), key)
                         .withMethod(HttpMethod.GET);
         return s3Client.generatePresignedUrl(generatePresignedUrlRequest);
+    }
+
+    // set any button click listeners
+    private void setOnClickListeners() {
+        // button to save a marker to collection
+        pinBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getContext(), "Saved to collection", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     /* When user swipes down, the marker detail is removed and returns to map fragment */
