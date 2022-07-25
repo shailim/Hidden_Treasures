@@ -24,8 +24,8 @@ import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
 import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.login.LoginActivity;
-import com.example.hidden_treasures.map.MarkerDetailFragment;
-import com.example.hidden_treasures.models.ParseMarker;
+import com.example.hidden_treasures.markers.MarkerDetailFragment;
+import com.example.hidden_treasures.markers.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.parse.ParseUser;
 

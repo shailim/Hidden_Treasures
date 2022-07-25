@@ -1,15 +1,12 @@
-package com.example.hidden_treasures.map;
+package com.example.hidden_treasures.util;
 
 import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import com.example.hidden_treasures.models.ParseMarker;
-import com.parse.ParseException;
-import com.parse.ParseFile;
+import com.example.hidden_treasures.markers.ParseMarker;
 import com.parse.ParseGeoPoint;
-import com.parse.ParseQuery;
 import com.parse.SaveCallback;
 
 import org.json.JSONArray;
@@ -17,12 +14,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /* Creates marker objects using sample place data */
 public class GenerateTestData {
@@ -61,9 +56,6 @@ public class GenerateTestData {
             int numMarkersToMake = 20;
             for (int i = 0; i < placesList.length(); i++) {
                 JSONObject object = placesList.getJSONObject(i);
-
-                // generate an id
-                String id = UUID.randomUUID().toString();
 
                 // get the latitude and longitude coordinates
                 double latitude = object.getDouble("lat");

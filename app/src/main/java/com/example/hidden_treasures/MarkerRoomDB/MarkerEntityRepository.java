@@ -5,25 +5,15 @@ import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 
-import com.example.hidden_treasures.App;
-import com.example.hidden_treasures.models.ParseMarker;
-import com.example.hidden_treasures.util.GeoHash;
-import com.google.android.gms.maps.model.LatLngBounds;
+import com.example.hidden_treasures.markers.ParseMarker;
 import com.parse.FindCallback;
 import com.parse.GetCallback;
-import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public class MarkerEntityRepository {
     private MarkerEntityDao markerEntityDao;
@@ -53,7 +43,8 @@ public class MarkerEntityRepository {
         ParseGeoPoint southwest = new ParseGeoPoint(swLat, swLong);
         ParseGeoPoint northeast = new ParseGeoPoint(neLat, neLong);
         query.whereWithinGeoBox("location", southwest, northeast);
-        query.orderByDescending("score");
+        query.orderByDescending("view_count");
+        query.orderByDescending("created_at");
         query.findInBackground(new FindCallback<ParseMarker>() {
             @Override
             public void done(List<ParseMarker> objects, ParseException e) {

@@ -1,28 +1,16 @@
 package com.example.hidden_treasures.MarkerRoomDB;
 
 import android.app.Application;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
-import com.airbnb.lottie.L;
-import com.example.hidden_treasures.models.ParseMarker;
-import com.parse.FindCallback;
-import com.parse.ParseException;
-import com.parse.ParseGeoPoint;
-import com.parse.ParseQuery;
-import com.parse.ParseUser;
-
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 
 public class MarkerViewModel extends AndroidViewModel {
 

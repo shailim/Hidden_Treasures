@@ -23,7 +23,7 @@ import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.login.LoginActivity;
 import com.example.hidden_treasures.map.GenerateTestData;
 import com.example.hidden_treasures.map.MapFragment;
-import com.example.hidden_treasures.models.ParseMarker;
+import com.example.hidden_treasures.markers.ParseMarker;
 import com.example.hidden_treasures.profile.ProfileFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.material.bottomnavigation.BottomNavigationView;

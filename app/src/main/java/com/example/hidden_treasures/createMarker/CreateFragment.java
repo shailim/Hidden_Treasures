@@ -27,36 +27,27 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.amazonaws.HttpMethod;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferListener;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferObserver;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferState;
 import com.amazonaws.mobileconnectors.s3.transferutility.TransferUtility;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import com.example.hidden_treasures.MainActivity;
-import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
-import com.example.hidden_treasures.models.ParseMarker;
+import com.example.hidden_treasures.markers.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.parse.ParseDecoder;
 import com.parse.ParseException;
-import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
-import com.parse.ParseUser;
 import com.parse.SaveCallback;
 import com.roger.catloadinglibrary.CatLoadingView;
 
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
-import java.net.URL;
-import java.sql.Date;
 import java.util.UUID;
 
 public class CreateFragment extends Fragment {

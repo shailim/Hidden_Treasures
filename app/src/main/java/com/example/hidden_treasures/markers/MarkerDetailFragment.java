@@ -1,4 +1,4 @@
-package com.example.hidden_treasures.map;
+package com.example.hidden_treasures.markers;
 
 import android.os.Bundle;
 
@@ -20,7 +20,6 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.bumptech.glide.Glide;
 import com.example.hidden_treasures.R;
-import com.example.hidden_treasures.markers.MarkerData;
 import com.example.hidden_treasures.util.onSwipeTouchListener;
 import com.google.android.gms.maps.model.Marker;
 

@@ -7,8 +7,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.amazonaws.HttpMethod;
@@ -17,12 +15,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.bumptech.glide.Glide;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
-import com.example.hidden_treasures.createMarker.NewMarkerEvent;
-import com.example.hidden_treasures.map.MarkerDetailFragment;
-import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
-import com.google.android.gms.maps.model.Marker;
-import com.parse.ParseFile;
 
 import org.greenrobot.eventbus.EventBus;
 

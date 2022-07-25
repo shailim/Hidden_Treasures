@@ -1,22 +1,11 @@
 package com.example.hidden_treasures.MarkerRoomDB;
 
 import android.content.Context;
-import android.util.Log;
 
-import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
-import androidx.sqlite.db.SupportSQLiteDatabase;
 
-import com.example.hidden_treasures.models.ParseMarker;
-import com.google.android.gms.maps.model.Marker;
-import com.parse.FindCallback;
-import com.parse.ParseException;
-import com.parse.ParseQuery;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 

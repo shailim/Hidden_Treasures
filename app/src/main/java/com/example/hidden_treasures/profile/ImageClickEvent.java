@@ -1,7 +1,5 @@
 package com.example.hidden_treasures.profile;
 
-import com.example.hidden_treasures.models.ParseMarker;
-
 import java.util.Date;
 
 public class ImageClickEvent {

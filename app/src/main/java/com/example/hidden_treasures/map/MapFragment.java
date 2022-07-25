@@ -1,15 +1,10 @@
 package com.example.hidden_treasures.map;
 
-import static com.parse.Parse.getApplicationContext;
-
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.location.Address;
-import android.location.Geocoder;
-import android.os.AsyncTask;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -24,7 +19,6 @@ import android.view.ViewGroup;
 
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.amazonaws.HttpMethod;
@@ -32,18 +26,15 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.gif.GifDrawable;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
-import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
 import com.example.hidden_treasures.markers.MarkerData;
-import com.example.hidden_treasures.models.ParseMarker;
+import com.example.hidden_treasures.markers.MarkerDetailFragment;
+import com.example.hidden_treasures.markers.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.example.hidden_treasures.util.BitmapFormat;
-import com.example.hidden_treasures.util.GeoHash;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -54,56 +45,15 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.libraries.places.api.Places;
-import com.google.android.libraries.places.api.model.Place;
-import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
-import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
-import com.google.maps.android.data.Feature;
-import com.google.maps.android.data.Layer;
-import com.google.maps.android.data.geojson.GeoJsonLayer;
-import com.parse.FindCallback;
-import com.parse.FunctionCallback;
-import com.parse.GetCallback;
-import com.parse.Parse;
-import com.parse.ParseCloud;
-import com.parse.ParseException;
-import com.parse.ParseFile;
-import com.parse.ParseGeoPoint;
-import com.parse.ParseObject;
-import com.parse.ParseQuery;
-import com.parse.ParseUser;
 
-import org.json.JSONObject;
-
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.JarURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.sql.Blob;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-
-import javax.net.ssl.HttpsURLConnection;
 
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
