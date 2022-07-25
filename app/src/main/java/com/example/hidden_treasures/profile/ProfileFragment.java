@@ -16,11 +16,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.TextView;
 
 import com.airbnb.lottie.LottieAnimationView;
-import com.example.hidden_treasures.MainActivity;
 import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
@@ -29,10 +27,6 @@ import com.example.hidden_treasures.login.LoginActivity;
 import com.example.hidden_treasures.map.MarkerDetailFragment;
 import com.example.hidden_treasures.models.ParseMarker;
 import com.example.hidden_treasures.R;
-import com.parse.FindCallback;
-import com.parse.Parse;
-import com.parse.ParseException;
-import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
 import org.greenrobot.eventbus.EventBus;
@@ -141,6 +135,21 @@ public class ProfileFragment extends Fragment {
         markers.add(0, storeInCache(event.marker));
         adapter.notifyItemInserted(0);
         Log.i(TAG, "added new marker to list in profile");
+
+    }
+
+    // stores created marker in cache
+    private MarkerEntity storeInCache(ParseMarker marker) {
+        try {
+            MarkerEntity newMarker = new MarkerEntity(marker.getObjectId(), marker.getTime(), marker.getTitle(), marker.getLocation().getLatitude(), marker.getLocation().getLongitude(), marker.getImage(), marker.getCreatedBy(), marker.getViewCount(), marker.getScore());
+            AppDatabase.databaseWriteExecutor.execute(() -> {
+                viewModel.insertMarker(newMarker);
+            });
+            return newMarker;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Subscribe

@@ -295,10 +295,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         Marker newMarker = map.addMarker(new MarkerOptions()
                 .position(location)
                 .title(marker.getTitle()));
+        setMarkerIcon(newMarker, marker.getImage(), marker.getObjectId());
         MarkerData data = new MarkerData(marker.getObjectId(), marker.getViewCount(), new Date(marker.getTime()), marker.getImage());
         newMarker.setTag(data);
         markerIDs.add(marker.getObjectId());
-        setMarkerIcon(newMarker, marker.getImage(), marker.getObjectId());
         Log.i(TAG, "moving camera to new marker");
         map.animateCamera(CameraUpdateFactory.newLatLngZoom(location, 13));
     }
@@ -345,6 +345,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         public void run() {
             // get current camera position
             lastExploredLocation = map.getCameraPosition().target;
+            LatLngBounds curBound = lastExploredBounds;
             // when camera idle and camera out of previous bounds or zoomed in more than twice or zoomed out more than twice
             if (lastZoomIn - map.getCameraPosition().zoom < -2 || lastZoomIn - map.getCameraPosition().zoom > 2) {
                 lastZoomIn = map.getCameraPosition().zoom;
@@ -352,12 +353,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 return;
             } else if (!lastExploredBounds.contains(lastExploredLocation)) {
                 updateMap();
+                // if moving to another location, de-cluster markers in previous location
+                MapCluster.deCluster(MapFragment.this);
             }
-            // if zoom changed from zoomed in to out, cluster markers
-            if (map.getCameraPosition().zoom <= 11 && lastZoomLevel > 11) {
+            //check whether to cluster or de-cluster markers
+            if (!curBound.contains(lastExploredLocation) && map.getCameraPosition().zoom <= 11) {
+                // if in a different location and zoomed out, cluster markers
                 MapCluster.clusterMarkers(MapFragment.this);
-            // if zoom changed from zoomed out to in, de-cluster markers
+            } else if (map.getCameraPosition().zoom <= 11 && lastZoomLevel > 11) {
+                // if zoom changed from zoomed in to out, cluster markers
+                MapCluster.clusterMarkers(MapFragment.this);
             } else if (map.getCameraPosition().zoom > 11 && lastZoomLevel <= 11) {
+                // if zoom changed from zoomed out to in, de-cluster markers
                 MapCluster.deCluster(MapFragment.this);
             }
             lastZoomLevel = map.getCameraPosition().zoom;
