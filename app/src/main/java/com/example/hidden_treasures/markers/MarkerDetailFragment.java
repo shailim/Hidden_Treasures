@@ -174,6 +174,7 @@ public class MarkerDetailFragment extends Fragment {
             try {
                 // first get the marker
                 ParseMarker marker = markerQuery.get(id);
+
                 // see if it's already in te user's collection
                 ParseQuery<ParseCollection> collectionQuery = ParseQuery.getQuery(ParseCollection.class);
                 collectionQuery.whereEqualTo("marker", marker);

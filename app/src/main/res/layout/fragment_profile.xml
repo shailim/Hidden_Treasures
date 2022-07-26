@@ -30,27 +30,83 @@
         android:textSize="20sp"
         app:layout_constraintTop_toBottomOf="@id/imageView" />
 
-    <TextView
-        android:id="@+id/tvMyMarkers"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/my_markers"
-        app:layout_constraintTop_toBottomOf="@id/tvUsername"
-        android:textStyle="bold"
-        android:textSize="14sp"
-        android:textColor="@color/black"
-        android:layout_marginTop="50dp"
-        app:layout_constraintStart_toStartOf="parent" />
 
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/gridView"
+    <LinearLayout
+        android:id="@+id/headerMyMarkers"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:numColumns="3"
-        android:padding="1dp"
+        android:layout_marginTop="50dp"
+        app:layout_constraintTop_toBottomOf="@id/tvUsername">
+
+        <TextView
+            android:id="@+id/tvMyMarkers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/my_markers"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:textColor="@color/black" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/seeMyMarkers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/see_all"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/myMarkersLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvMyMarkers" />
+        app:layout_constraintTop_toBottomOf="@id/headerMyMarkers"
+        android:orientation="horizontal" />
+
+
+    <LinearLayout
+        android:id="@+id/headerMyCollection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
+        app:layout_constraintTop_toBottomOf="@id/myMarkersLayout">
+
+        <TextView
+            android:id="@+id/tvMyCollection"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/saved_collection"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:textColor="@color/black" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/seeMyCollection"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/see_all"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/myCollectionLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/headerMyCollection"
+        android:orientation="horizontal" />
 
 
     <com.airbnb.lottie.LottieAnimationView

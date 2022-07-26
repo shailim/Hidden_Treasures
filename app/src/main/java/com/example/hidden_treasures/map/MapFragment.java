@@ -11,7 +11,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import android.os.Environment;
 import android.os.Handler;
+import android.os.StatFs;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,7 +49,9 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -215,6 +219,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         return s3Client.generatePresignedUrl(generatePresignedUrlRequest);
     }
 
+    public long sd_card_free(){
+        File path = Environment.getExternalStorageDirectory();
+        StatFs stat = new StatFs(path.getPath());
+        long availBlocks = stat.getAvailableBlocksLong();
+        long blockSize = stat.getBlockSizeLong();
+        long free_memory = availBlocks * blockSize;
+
+        return free_memory;
+    }
+
     // sets the image icon for the marker
     public void setMarkerIcon(Marker marker, String imageKey, String id) {
         URL url = getSignedUrl(imageKey);
@@ -227,6 +241,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 resource = BitmapFormat.addShadowToCircularBitmap(resource, 4, Color.LTGRAY);
                 marker.setIcon(BitmapDescriptorFactory.fromBitmap(resource));
 
+                Log.i(TAG, "free bytes: " + sd_card_free());
                 // save the bitmap icon to the database
                 try {
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -236,6 +251,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+
+                // freeing the bitmap object
+                resource.recycle();
+
             }
             @Override
             public void onLoadCleared(@Nullable Drawable placeholder) {
