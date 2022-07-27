@@ -37,6 +37,7 @@ import com.example.hidden_treasures.markers.MarkerDetailFragment;
 import com.example.hidden_treasures.markers.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.example.hidden_treasures.util.BitmapFormat;
+import com.example.hidden_treasures.util.S3Helper;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -66,7 +67,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private Handler handler;
 
-    private AmazonS3Client s3Client;
 
     private MarkerViewModel markerViewModel;
 
@@ -95,8 +95,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         handler = new Handler();
-        BasicAWSCredentials credentials = new BasicAWSCredentials(getString(R.string.aws_accessID), getString(R.string.aws_secret_key));
-        s3Client = new AmazonS3Client(credentials);
         if (savedInstanceState != null) {
             lastExploredLocation = savedInstanceState.getParcelable("lastExploredLocation");
             lastZoomLevel = savedInstanceState.getFloat("lastZoomLevel");
@@ -211,14 +209,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         markerTable = MapHelper.addToMarkerTable(markerTable, marker);
     }
 
-    // generates a signed url to access the image in s3
-    private URL getSignedUrl(String key) {
-        GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                new GeneratePresignedUrlRequest(getString(R.string.s3_bucket), key)
-                        .withMethod(HttpMethod.GET);
-        return s3Client.generatePresignedUrl(generatePresignedUrlRequest);
-    }
-
     public long sd_card_free(){
         File path = Environment.getExternalStorageDirectory();
         StatFs stat = new StatFs(path.getPath());
@@ -231,7 +221,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     // sets the image icon for the marker
     public void setMarkerIcon(Marker marker, String imageKey, String id) {
-        URL url = getSignedUrl(imageKey);
+        URL url = S3Helper.getSignedUrl(getContext(), imageKey);
         Glide.with(this).asBitmap().load(url.toString()).into(new CustomTarget<Bitmap>() {
             @Override
             public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {

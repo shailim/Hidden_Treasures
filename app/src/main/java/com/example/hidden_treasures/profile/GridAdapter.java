@@ -16,6 +16,7 @@ import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.bumptech.glide.Glide;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.R;
+import com.example.hidden_treasures.util.S3Helper;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -28,15 +29,9 @@ public class GridAdapter extends RecyclerView.Adapter<GridAdapter.ViewHolder> {
     List<MarkerEntity> markers;
     Context context;
 
-    private AmazonS3Client s3Client;
-    private String bucketName;
-
     public GridAdapter(Context context, List<MarkerEntity> markers, String accessId, String secret, String bucket) {
         this.context = context;
         this.markers = markers;
-        BasicAWSCredentials credentials = new BasicAWSCredentials(accessId, secret);
-        s3Client = new AmazonS3Client(credentials);
-        bucketName = bucket;
     }
 
     @NonNull
@@ -70,7 +65,7 @@ public class GridAdapter extends RecyclerView.Adapter<GridAdapter.ViewHolder> {
         public void bind(MarkerEntity marker) {
             String imageKey = marker.imageKey;
             // get a signed url for the image
-            String url = getSignedUrl(imageKey).toString();
+            String url = S3Helper.getSignedUrl(context, imageKey).toString();
             Glide.with(context).load(url).into(ivMarkerImage);
             ivMarkerImage.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -80,13 +75,5 @@ public class GridAdapter extends RecyclerView.Adapter<GridAdapter.ViewHolder> {
                 }
             });
         }
-    }
-
-    // generates a signed url to access the image in s3
-    private URL getSignedUrl(String key) {
-        GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                new GeneratePresignedUrlRequest(bucketName, key)
-                        .withMethod(HttpMethod.GET);
-        return s3Client.generatePresignedUrl(generatePresignedUrlRequest);
     }
 }

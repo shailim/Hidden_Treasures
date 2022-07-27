@@ -24,6 +24,7 @@ import com.bumptech.glide.Glide;
 import com.example.hidden_treasures.R;
 import com.example.hidden_treasures.collections.ParseCollection;
 import com.example.hidden_treasures.profile.ProfileFragment;
+import com.example.hidden_treasures.util.S3Helper;
 import com.example.hidden_treasures.util.onSwipeTouchListener;
 import com.google.android.gms.maps.model.Marker;
 import com.parse.FindCallback;
@@ -44,7 +45,6 @@ public class MarkerDetailFragment extends Fragment {
 
     private static final String TAG = "MarkerDetailFragment";
 
-    private AmazonS3Client s3Client;
 
     private static final String MEDIA_KEY = "mediaUrl";
     private static final String TITLE = "title";
@@ -98,8 +98,6 @@ public class MarkerDetailFragment extends Fragment {
             id = getArguments().getString(ID);
             Log.i(TAG, "data: " + viewCount + " " + date);
         }
-        BasicAWSCredentials credentials = new BasicAWSCredentials(getString(R.string.aws_accessID), getString(R.string.aws_secret_key));
-        s3Client = new AmazonS3Client(credentials);
     }
 
     @Override
@@ -128,7 +126,7 @@ public class MarkerDetailFragment extends Fragment {
             tvDate.setText(calculateTimeAgo(date));
 
             // get a signed url for the image
-            String url = getSignedUrl(mediaKey).toString();
+            String url = S3Helper.getSignedUrl(getContext(), mediaKey).toString();
             Glide.with(getContext()).load(url).into(ivMarkerDetail);
         } else {
             // showing the first of the markers in the list
@@ -137,7 +135,7 @@ public class MarkerDetailFragment extends Fragment {
             tvDate.setText(calculateTimeAgo(data.getDate()));
 
             // get a signed url for the image
-            String url = getSignedUrl(data.getImageKey()).toString();
+            String url = S3Helper.getSignedUrl(getContext(), data.getImageKey()).toString();
             Glide.with(getContext()).load(url).into(ivMarkerDetail);
 
         }
@@ -145,14 +143,6 @@ public class MarkerDetailFragment extends Fragment {
         setSwipeListener(view);
         // set any button click listeners
         setOnClickListeners();
-    }
-
-    // generates a signed url to access the image in s3
-    private URL getSignedUrl(String key) {
-        GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                new GeneratePresignedUrlRequest(getString(R.string.s3_bucket), key)
-                        .withMethod(HttpMethod.GET);
-        return s3Client.generatePresignedUrl(generatePresignedUrlRequest);
     }
 
     // set any button click listeners
@@ -231,7 +221,7 @@ public class MarkerDetailFragment extends Fragment {
                     tvDate.setText(calculateTimeAgo(data.getDate()));
 
                     // get a signed url for the image
-                    String url = getSignedUrl(data.getImageKey()).toString();
+                    String url = S3Helper.getSignedUrl(getContext(), data.getImageKey()).toString();
                     Glide.with(getContext()).load(url).into(ivMarkerDetail);
                     curPos++;
                 }
@@ -247,7 +237,7 @@ public class MarkerDetailFragment extends Fragment {
                     tvDate.setText(calculateTimeAgo(data.getDate()));
 
                     // get a signed url for the image
-                    String url = getSignedUrl(data.getImageKey()).toString();
+                    String url = S3Helper.getSignedUrl(getContext(), data.getImageKey()).toString();
                     Glide.with(getContext()).load(url).into(ivMarkerDetail);
                     curPos--;
                 }

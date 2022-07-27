@@ -20,6 +20,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.airbnb.lottie.LottieAnimationView;
+import com.amazonaws.HttpMethod;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.bumptech.glide.Glide;
 import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
@@ -29,11 +31,13 @@ import com.example.hidden_treasures.login.LoginActivity;
 import com.example.hidden_treasures.markers.MarkerDetailFragment;
 import com.example.hidden_treasures.markers.ParseMarker;
 import com.example.hidden_treasures.R;
+import com.example.hidden_treasures.util.S3Helper;
 import com.parse.ParseUser;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +50,13 @@ public class ProfileFragment extends Fragment {
     LottieAnimationView logoutBtn;
     List<MarkerEntity> markers = new ArrayList<>();
     GridAdapter adapter;
+
+    ImageView ivMarkerImage1;
+    ImageView ivMarkerImage2;
+    ImageView ivMarkerImage3;
+    ImageView ivCollectionImage1;
+    ImageView ivCollectionImage2;
+    ImageView ivCollectionImage3;
 
     private MarkerViewModel viewModel;
 
@@ -78,6 +89,13 @@ public class ProfileFragment extends Fragment {
         tvUsername = view.findViewById(R.id.tvUsername);
         gridView = view.findViewById(R.id.gridView);
         logoutBtn = view.findViewById(R.id.logoutBtn);
+
+        ivMarkerImage1 = view.findViewById(R.id.ivMarkerImage1);
+        ivMarkerImage2 = view.findViewById(R.id.ivMarkerImage2);
+        ivMarkerImage3 = view.findViewById(R.id.ivMarkerImage3);
+        ivCollectionImage1 = view.findViewById(R.id.ivCollectionImage1);
+        ivCollectionImage2 = view.findViewById(R.id.ivCollectionImage2);
+        ivCollectionImage3 = view.findViewById(R.id.ivCollectionImage3);
 
         tvUsername.setText(ParseUser.getCurrentUser().getUsername());
 
@@ -128,6 +146,7 @@ public class ProfileFragment extends Fragment {
             }
         });
     }
+
 
     /* subscribe for event when user creates a new marker */
     @Subscribe
