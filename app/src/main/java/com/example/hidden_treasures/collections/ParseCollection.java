@@ -17,8 +17,8 @@ public class ParseCollection extends ParseObject {
         put(USERID, userId);
     }
 
-    public ParseObject getMarker() {
-        return getParseObject(MARKER);
+    public ParseMarker getMarker() {
+        return (ParseMarker) getParseObject(MARKER);
     }
 
     public String getUserId() {

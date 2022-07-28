@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -26,12 +27,16 @@ import com.bumptech.glide.Glide;
 import com.example.hidden_treasures.MarkerRoomDB.AppDatabase;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerEntity;
 import com.example.hidden_treasures.MarkerRoomDB.MarkerViewModel;
+import com.example.hidden_treasures.collections.ParseCollection;
 import com.example.hidden_treasures.createMarker.NewMarkerEvent;
 import com.example.hidden_treasures.login.LoginActivity;
 import com.example.hidden_treasures.markers.MarkerDetailFragment;
 import com.example.hidden_treasures.markers.ParseMarker;
 import com.example.hidden_treasures.R;
 import com.example.hidden_treasures.util.S3Helper;
+import com.parse.FindCallback;
+import com.parse.ParseException;
+import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
 import org.greenrobot.eventbus.EventBus;
@@ -39,6 +44,7 @@ import org.greenrobot.eventbus.Subscribe;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class ProfileFragment extends Fragment {
@@ -46,17 +52,15 @@ public class ProfileFragment extends Fragment {
     public static final String TAG = "ProfileFragment";
 
     TextView tvUsername;
-    RecyclerView gridView;
     LottieAnimationView logoutBtn;
+    Button seeMyMarkers;
+    Button seeCollection;
     List<MarkerEntity> markers = new ArrayList<>();
+    List<ParseMarker> collection = new ArrayList<>();
     GridAdapter adapter;
 
-    ImageView ivMarkerImage1;
-    ImageView ivMarkerImage2;
-    ImageView ivMarkerImage3;
-    ImageView ivCollectionImage1;
-    ImageView ivCollectionImage2;
-    ImageView ivCollectionImage3;
+    // holds the image views for the siz profile and collection markers
+    ImageView[] imagesViews = new ImageView[6];
 
     private MarkerViewModel viewModel;
 
@@ -87,24 +91,24 @@ public class ProfileFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         tvUsername = view.findViewById(R.id.tvUsername);
-        gridView = view.findViewById(R.id.gridView);
         logoutBtn = view.findViewById(R.id.logoutBtn);
+        seeMyMarkers = view.findViewById(R.id.seeMyMarkers);
+        seeCollection = view.findViewById(R.id.seeMyCollection);
 
-        ivMarkerImage1 = view.findViewById(R.id.ivMarkerImage1);
-        ivMarkerImage2 = view.findViewById(R.id.ivMarkerImage2);
-        ivMarkerImage3 = view.findViewById(R.id.ivMarkerImage3);
-        ivCollectionImage1 = view.findViewById(R.id.ivCollectionImage1);
-        ivCollectionImage2 = view.findViewById(R.id.ivCollectionImage2);
-        ivCollectionImage3 = view.findViewById(R.id.ivCollectionImage3);
+        imagesViews[0] = view.findViewById(R.id.ivMarkerImage1);
+        imagesViews[1] = view.findViewById(R.id.ivMarkerImage2);
+        imagesViews[2] = view.findViewById(R.id.ivMarkerImage3);
+        imagesViews[3] = view.findViewById(R.id.ivCollectionImage1);
+        imagesViews[4] = view.findViewById(R.id.ivCollectionImage2);
+        imagesViews[5] = view.findViewById(R.id.ivCollectionImage3);
 
         tvUsername.setText(ParseUser.getCurrentUser().getUsername());
 
         // get the user's markers
         queryMarkers();
+        //query the user's collection
+        queryCollection();
 
-        adapter =  new GridAdapter(getContext(), markers, getString(R.string.aws_accessID), getString(R.string.aws_secret_key), getString(R.string.s3_bucket));
-        gridView.setAdapter(adapter);
-        gridView.setLayoutManager(new GridLayoutManager(getContext(), 3));
 
         // set onClickListeners for any buttons
         setOnClickListeners();
@@ -129,8 +133,65 @@ public class ProfileFragment extends Fragment {
     public void queryMarkers() {
         // get from cache, not from server
         viewModel.getUserMarkers().observe(getViewLifecycleOwner(), list -> {
+            markers.clear();
             markers.addAll(list);
-            adapter.notifyDataSetChanged();
+            setFirstThreeProfileMarkers();
+        });
+    }
+
+    // Retrieves markers in user's collection in descending chronological order
+    public void queryCollection() {
+        ParseQuery<ParseCollection> query = ParseQuery.getQuery(ParseCollection.class);
+        query.whereEqualTo("userId", ParseUser.getCurrentUser().getObjectId());
+        query.orderByDescending("created_at");
+        query.findInBackground(new FindCallback<ParseCollection>() {
+            @Override
+            public void done(List<ParseCollection> objects, ParseException e) {
+                if (e == null) {
+                    for (ParseCollection collectionObject : objects) {
+                        collection.add(collectionObject.getMarker());
+                    }
+                    setFirstThreeCollectionMarkers();
+                }
+            }
+        });
+    }
+
+    // sets the image view for the first three profile markers
+    public void setFirstThreeProfileMarkers() {
+        for (int i = 0; i < 3 && i < markers.size(); i++) {
+            String imageKey = markers.get(i).imageKey;
+            // get a signed url for the image
+            String url = S3Helper.getSignedUrl(getContext(), imageKey).toString();
+            Glide.with(getContext()).load(url).into(imagesViews[i]);
+            setMarkerClickListener(imagesViews[i], markers.get(i).imageKey, markers.get(i).title, markers.get(i).view_count, markers.get(i).createdAt);
+        }
+    }
+
+    // sets the image view for the first three collection markers
+    public void setFirstThreeCollectionMarkers() {
+        for (int i = 3; i < 6 && i < collection.size() + 3; i++) {
+            String imageKey = null;
+            try {
+                imageKey = ((ParseMarker) collection.get(i-3).fetchIfNeeded()).getImage();
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            // get a signed url for the image
+            String url = S3Helper.getSignedUrl(getContext(), imageKey).toString();
+            Glide.with(getContext()).load(url).into(imagesViews[i]);
+            setMarkerClickListener(imagesViews[i], collection.get(i-3).getImage(), collection.get(i-3).getTitle(), collection.get(i-3).getViewCount(), collection.get(i-3).getTime());
+        }
+    }
+
+    // sets the onclick Listener for the image views
+    public void setMarkerClickListener(ImageView iv, String imageKey, String title, int views, long createdAt) {
+        iv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // posting new marker event
+                EventBus.getDefault().post(new ImageClickEvent(imageKey, title, views, new Date(createdAt)));
+            }
         });
     }
 
@@ -143,6 +204,38 @@ public class ProfileFragment extends Fragment {
                 ParseUser.logOutInBackground();
                 startActivity(new Intent(getContext(), LoginActivity.class));
                 getActivity().finish();
+            }
+        });
+
+        seeMyMarkers.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // go to profile detail fragment
+                FragmentManager childFragMan = getChildFragmentManager();
+                FragmentTransaction childFragTrans = childFragMan.beginTransaction();
+
+                // create a new marker detail fragment instance and pass in image url, title
+                ProfileDetailFragment profileDetailFragment = ProfileDetailFragment.newInstance(markers);
+                // add the child fragment to current profile fragment
+                childFragTrans.add(R.id.profileFragmentLayout, profileDetailFragment);
+                childFragTrans.addToBackStack(null);
+                childFragTrans.commit();
+            }
+        });
+
+        seeCollection.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // go to collection detail fragment
+                FragmentManager childFragMan = getChildFragmentManager();
+                FragmentTransaction childFragTrans = childFragMan.beginTransaction();
+
+                // create a new marker detail fragment instance and pass in image url, title
+                CollectionDetailFragment collectionDetailFragment = CollectionDetailFragment.newInstance(collection);
+                // add the child fragment to current profile fragment
+                childFragTrans.add(R.id.profileFragmentLayout, collectionDetailFragment);
+                childFragTrans.addToBackStack(null);
+                childFragTrans.commit();
             }
         });
     }
